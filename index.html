@@ -171,6 +171,7 @@ main{padding:0 max(5vw,16px)}
 .reasons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
 .reasons button{border:1px solid #3a3a3a;background:#0a0a0a;color:var(--ink);border-radius:6px;padding:12px 6px;min-height:52px;font:600 15px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em}
 .reasons button:hover{border-color:var(--acc);color:var(--acc)}
+.hist.swim{border-left-color:var(--swim)}.hist.swim .badge{color:var(--swim)}
 .card.skipped,.hist.skip{border-style:dashed;border-color:#444;border-left:4px solid var(--redInk)}
 .card.skipped .finish{margin-top:14px}
 .rtag{display:inline-block;font:600 12px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.06em;border-radius:3px;padding:3px 8px;margin-top:8px;background:var(--chip);color:#cfcbc2}
@@ -448,15 +449,18 @@ function skipHist(s,i){
   const what=s.kind==='swim'?'Zwemmen':(s.week?'Blok '+s.week+' · ':'')+'Training '+(s.type||'');
   return '<section class="card hist skip"><div class="day"><h3>'+esc(what)+' overgeslagen</h3><span class="badge">'+esc(nlDate(s.date))+'</span></div><span class="rtag '+esc(s.reason)+'">'+esc(REASONS[s.reason]||s.reason)+'</span><br><button class="del" data-skdel="'+i+'">Verwijder</button></section>';
 }
+function swimHist(x){
+  return '<section class="card hist swim"><div class="day"><h3>Zwemmen</h3><span class="badge">'+esc(nlDate(x.date))+'</span></div><ul><li>'+esc(fmtM(x.meters))+' · '+esc(x.laps)+' banen × '+esc(String(x.len).replace('.',','))+' m</li><li>'+esc(fmtDur(x.sec))+' · tempo '+esc(fmtPace(pace(x)))+'</li>'+(x.note?'<li>'+esc(x.note)+'</li>':'')+'</ul><button class="del" data-sdel="'+esc(x.date)+'">Verwijder</button></section>';
+}
 function renderHist(){
-  if(!S.history.length&&!S.skips.length){$('main').innerHTML='<div class="card empty">Nog geen trainingen opgeslagen. Rond je eerste training af met <b>Training opslaan</b>.</div>'+backupCard();return}
+  if(!S.history.length&&!S.skips.length&&!S.swims.length){$('main').innerHTML='<div class="card empty">Nog geen trainingen opgeslagen. Rond je eerste training af met <b>Training opslaan</b>.</div>'+backupCard();return}
   let sk='';
   if(S.skips.length){
     const c={};S.skips.forEach(s=>c[s.reason]=(c[s.reason]||0)+1);
     sk='<section class="card"><h3>Overgeslagen</h3><div class="meta">'+pl(S.skips.length,'dag','dagen')+' overgeslagen in totaal.</div><div class="skipsum">'+Object.keys(REASONS).filter(r=>c[r]).map(r=>'<span class="rtag '+r+'">'+REASONS[r]+': '+c[r]+'×</span>').join('')+'</div></section>';
   }
-  const entries=S.history.map((hh,i)=>({date:hh.date,h:i})).concat(S.skips.map((s,i)=>({date:s.date,s:i}))).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
-  if(!S.history.length){$('main').innerHTML=streakCard()+sk+entries.map(x=>skipHist(S.skips[x.s],x.s)).join('')+backupCard();return}
+  const entries=S.history.map((hh,i)=>({date:hh.date,h:i})).concat(S.skips.map((s,i)=>({date:s.date,s:i})),S.swims.map((x,i)=>({date:x.date,w:i}))).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  if(!S.history.length){$('main').innerHTML=streakCard()+sk+entries.map(x=>x.w!=null?swimHist(S.swims[x.w]):skipHist(S.skips[x.s],x.s)).join('')+backupCard();return}
   const all=ALL.filter(e=>!e.cardio&&!e.time&&!e.bw);
   const sel=view.split(':')[1]||all[0].id;
   const pts=[];
@@ -467,6 +471,7 @@ function renderHist(){
   h=streakCard()+h+sk;
   h+=entries.map(x=>{
     if(x.s!=null)return skipHist(S.skips[x.s],x.s);
+    if(x.w!=null)return swimHist(S.swims[x.w]);
     const idx=x.h,hh=S.history[idx];
     const lines=(hh.week?planOf(hh):ALL).filter(e=>!e.cardio).map(e=>{const it=(hh.items[e.id]||[]).filter(s=>s.done);if(!it.length)return '';
       const k=it.map(s=>num(s.kg)).filter(x=>x!=null);return '<li>'+esc(e.n)+': '+(k.length?esc(fmt(Math.max(...k)))+' kg · ':'')+esc(it.map(s=>s.reps||'–').join(' '))+'</li>'}).join('');
