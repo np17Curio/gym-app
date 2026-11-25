@@ -1,6 +1,6 @@
 /* Service worker: zorgt dat de app ook zonder internet opent.
    Verhoog VERSION als je index.html aanpast, dan haalt de app de nieuwe versie op. */
-const VERSION = 'gym-v1';
+const VERSION = 'gym-v2';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
