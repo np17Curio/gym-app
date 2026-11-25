@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mijn gym app</title>
+<meta name="theme-color" content="#ef4a2b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: energiek, persoonlijk trainingsmaatje, kort en duidelijk
+   IDEA: een trainingskaart die je in de gym afvinkt, set voor set
+   PICTURE: grote vandaag-kaart met voortgangsbalk + set-rijen met afvinkknoppen
+   COLOUR and TYPE: tomatenrood veld, wit, inktzwart; Archivo 800 + Inter
+   LAYOUT: één kolom zoals een app, rusttimer onderaan vast */
+:root{color-scheme:light dark;
+--bg:light-dark(#f4f2ef,#121212);--card:light-dark(#ffffff,#1d1d1d);--ink:light-dark(#161616,#f2f0ed);
+--mute:light-dark(#6d6a66,#a29e99);--line:light-dark(#e6e2dd,#2c2c2c);
+--red:#ef4a2b;--redInk:light-dark(#c9341a,#ff7a5c);--ok:light-dark(#1f8a4c,#4fd08a);--chip:light-dark(#f4f2ef,#262626)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,sans-serif;overflow-x:clip;padding-bottom:110px}
+h1,h2,h3{font-family:Archivo,Inter,sans-serif;margin:0;line-height:1.05}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.top{background:var(--red);color:#fff;padding:calc(20px + env(safe-area-inset-top)) max(5vw,16px) 26px}
+.wrap{max-width:640px;margin:0 auto}
+.date{font-size:14px;opacity:.9;margin-bottom:6px}
+.top h1{font-size:clamp(32px,8vw,44px);font-weight:800}
+.swimhead{display:none;margin:10px 0 0;font-weight:600}
+.swimmode .swimhead{display:block}.swimmode .seg,.swimmode .weeks,.swimmode .bar,.swimmode .prog{display:none}
+.top{transition:background .3s}.top.swimmode{background:#1f6fd1}
+.swin{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.swin label{position:relative;display:block}
+.swin label>small{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+.swin input,.swin select{width:100%;font-size:16px;padding:10px 12px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit}
+.swin .full{grid-column:1/-1}
+.swin .finish{grid-column:1/-1;margin:4px 0 0;background:#1f6fd1;color:#fff}
+.live{grid-column:1/-1;background:var(--chip);border-radius:12px;padding:10px 12px;font-size:15px}
+.live b{font-family:Archivo,sans-serif}
+.wk{display:grid;gap:4px;border-top:1px solid var(--line);padding:10px 0}
+.wk:first-of-type{border-top:0}
+.wk .l1{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.wk .meter{height:10px;background:var(--chip);border-radius:99px;overflow:hidden}.wk .meter i{display:block;height:100%;background:#1f6fd1;border-radius:99px}
+.wk .l2{font-size:14px;color:var(--mute)}
+.up{color:var(--ok);font-weight:700}.down{color:var(--redInk);font-weight:700}
+.seg{display:flex;gap:6px;margin:16px 0 18px;background:rgba(0,0,0,.18);padding:4px;border-radius:14px}
+.seg button{flex:1;border:0;border-radius:10px;padding:10px 8px;min-height:44px;background:transparent;color:#fff;font-weight:600}
+.seg button[aria-pressed=true]{background:#fff;color:#161616}
+.weeks{display:flex;gap:6px;align-items:center;margin:-6px 0 16px;font-size:14px;flex-wrap:wrap}
+.weeks span{opacity:.9;margin-right:4px}
+.weeks button{border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;border-radius:99px;padding:6px 12px;min-height:44px;font-weight:600}
+.weeks button[aria-pressed=true]{background:#fff;color:#161616;border-color:#fff}
+.bar{height:12px;background:rgba(255,255,255,.3);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:#fff;border-radius:99px;transition:width .4s}
+.prog{display:flex;justify-content:space-between;font-size:14px;margin-top:8px}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;max-width:640px;margin:16px auto 0;padding:0 max(5vw,16px)}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;padding:8px 16px;min-height:44px;font-weight:600}
+.tabs button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+main{padding:0 max(5vw,16px)}
+.card{background:var(--card);border-radius:18px;padding:16px;margin-top:14px;border:1px solid var(--line)}
+.card.done{border-color:var(--ok)}
+.head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card h3{font-size:20px;font-weight:700}
+.meta{color:var(--mute);font-size:14px;margin-top:4px}
+.badge{flex:none;font-size:13px;font-weight:600;background:var(--chip);border-radius:99px;padding:4px 10px;white-space:nowrap}
+.mus{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.mus span{font-size:13px;font-weight:600;color:var(--redInk);background:light-dark(#fdebe6,#3a1d17);border-radius:99px;padding:3px 10px}
+.tip{font-size:14px;margin-top:10px;padding:8px 12px;border-radius:10px;background:var(--chip)}
+.tip b{color:var(--redInk)}
+.sets{margin-top:12px;display:grid;gap:8px}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) minmax(0,1fr) 48px;gap:8px;align-items:center}
+.row .n{font-weight:700;color:var(--mute);text-align:center}
+.row label{position:relative}
+.row input{width:100%;font-size:16px;padding:10px 40px 10px 12px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.row label span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mute);pointer-events:none}
+.chk{width:48px;height:46px;border-radius:12px;border:2px solid var(--line);background:transparent;color:var(--mute);display:grid;place-items:center}
+.chk[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+.chk svg{width:22px;height:22px}
+.simple{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.list{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.list li{display:flex;gap:10px;align-items:center}
+.finish{display:block;width:100%;margin:20px 0 0;border:0;border-radius:16px;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px;padding:16px;min-height:54px}
+.note{font-size:13px;color:var(--mute);margin-top:10px;text-align:center}
+.cel{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:16px;z-index:5}
+.cel[hidden]{display:none}
+.celbox{background:var(--card);color:var(--ink);border-radius:22px;padding:24px 20px 20px;width:min(440px,100%);border-top:10px solid var(--red);animation:pop .35s ease-out}
+.celbox h2{font-size:30px;font-weight:800;color:var(--redInk)}
+.celbox p{margin:10px 0 0}
+.wins{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.wins li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;background:var(--chip);border-radius:12px;padding:10px 12px}
+.wins span{grid-column:1;color:var(--mute);font-size:14px;white-space:nowrap}
+.wins em{grid-row:1/3;grid-column:2;align-self:center;font-style:normal;font-weight:700;color:var(--ok);white-space:nowrap}
+.row.wu .n{color:var(--redInk)}
+.row.wu input{border-style:dashed}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.timer{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:var(--bg);padding:12px max(5vw,16px) calc(12px + env(safe-area-inset-bottom));transform:translateY(110%);transition:transform .3s}
+.timer.on{transform:none}
+.timer .wrap{display:flex;align-items:center;gap:10px}
+.timer .t{font:800 34px Archivo,sans-serif;font-variant-numeric:tabular-nums;flex:1}
+.timer .t small{font:500 13px Inter,sans-serif;display:block;opacity:.7}
+.timer button{border:0;border-radius:12px;padding:10px 14px;min-height:44px;background:var(--red);color:#fff;font-weight:600}
+.timer button.g{background:transparent;color:var(--bg);border:1px solid currentColor}
+.hist .day{display:flex;justify-content:space-between;gap:8px}
+.hist ul{margin:8px 0 0;padding-left:18px;color:var(--mute);font-size:14px}
+.pick{width:100%;font-size:16px;padding:10px 12px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:10px}
+.bars{display:grid;gap:6px;margin-top:12px}
+.bars div{display:grid;grid-template-columns:62px minmax(0,1fr) 62px;gap:8px;align-items:center;font-size:14px}
+.bars i{display:block;height:14px;background:var(--red);border-radius:6px}
+.bars .v{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wform{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px}
+.wform label{position:relative}
+.wform input{width:100%;font-size:16px;padding:10px 40px 10px 12px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit}
+.wform input[type=date]{padding-right:12px}
+.wform label span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mute)}
+.wform .finish{grid-column:1/-1;margin:0}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stats div{background:var(--chip);border-radius:12px;padding:10px}
+.stats small{display:block;color:var(--mute);font-size:13px}
+.stats b{font:800 clamp(18px,5vw,24px) Archivo,sans-serif;white-space:nowrap}
+.fig{position:relative;height:220px;margin-top:14px}.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.wlist{list-style:none;margin:8px 0 0;padding:0}
+.wlist li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;border-top:1px solid var(--line);padding:4px 0}
+.wlist b{white-space:nowrap;font-variant-numeric:tabular-nums}
+.bk{display:grid;gap:8px;margin-top:12px}
+.bk .finish,#bkRestore{margin:0}
+.finish.alt{background:var(--chip);color:var(--ink);border:1px solid var(--line)}
+.bkl{display:block;margin:12px 0 8px}.bkl small{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+.bkl textarea{width:100%;font:14px/1.4 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical}
+.empty{color:var(--mute);text-align:center;padding:24px 8px}
+.del{border:0;background:none;color:var(--mute);text-decoration:underline;padding:6px;min-height:44px}
+@media(prefers-reduced-motion:reduce){.bar i,.timer{transition:none}.celbox{animation:none}}
+</style>
+</head>
+<body>
+<header class="top" id="top"><div class="wrap">
+  <div class="date" id="date"></div>
+  <h1 id="title">Training</h1>
+  <p class="swimhead" id="swimHead"></p>
+  <div class="seg" role="group" aria-label="Kies training">
+    <button id="segA" aria-pressed="true">A · dinsdag</button>
+    <button id="segB" aria-pressed="false">B · donderdag</button>
+  </div>
+  <div class="weeks" role="group" aria-label="Kies blok"><span id="blokInfo"></span><button id="w1">Blok 1</button><button id="w2">Blok 2</button><button id="w3">Blok 3</button></div>
+  <div class="bar"><i id="barFill" style="width:0"></i></div>
+  <div class="prog"><span id="progTxt">0 van 0 sets</span><span id="dur">± 75 min</span></div>
+</div></header>
+<nav class="tabs" aria-label="Weergave">
+  <button id="tabT" aria-pressed="true">Vandaag</button>
+  <button id="tabS" aria-pressed="false">Zwemmen</button>
+  <button id="tabH" aria-pressed="false">Geschiedenis</button>
+  <button id="tabW" aria-pressed="false">Mijn gewicht</button>
+</nav>
+<main class="wrap" id="main"></main>
+<div class="cel" id="cel" hidden role="dialog" aria-modal="true" aria-labelledby="celBody"><div class="celbox"><div id="celBody"></div><button class="finish" id="celOk">Top!</button></div></div>
+<div class="timer" id="timer" aria-live="polite"><div class="wrap">
+  <div class="t"><small>Rust</small><span id="tLeft">2:00</span></div>
+  <button class="g" id="tPlus">+30 s</button>
+  <button id="tSkip">Klaar</button>
+</div></div>
+<script>
+{
+/* Blokken van 3 weken: 3 weken dezelfde oefeningen (elke week iets zwaarder), daarna een nieuw blok met andere oefeningen. Na blok 3 begint blok 1 opnieuw. Geen squats. */
+const IS_PWA=true;
+const PLANS={
+1:{A:[
+ {id:'legpress',n:'Leg press',sets:4,min:8,max:10,rest:120,inc:5},
+ {id:'bench',n:'Bankdrukken',sets:3,min:6,max:8,rest:120,inc:2.5},
+ {id:'row',n:'Barbell row',sets:3,min:8,max:10,rest:90,inc:2.5},
+ {id:'rdl',n:'Roemeense deadlift',sets:3,min:8,max:10,rest:90,inc:2.5},
+ {id:'ohp',n:'Dumbbell shoulder press',sets:3,min:10,max:10,rest:90,inc:1,note:'kg per dumbbell'},
+ {id:'plank',n:'Plank',sets:3,min:30,max:45,rest:45,time:true},
+ {id:'cardio1A',n:'Conditie: intervallen',cardio:'Roeier of fiets: 30 sec hard, 60 sec rustig, 5 rondes'}],
+ B:[
+ {id:'trap',n:'Trap bar deadlift',sets:3,min:5,max:5,rest:120,inc:2.5},
+ {id:'lat',n:'Lat pulldown',sets:3,min:8,max:10,rest:90,inc:2.5},
+ {id:'incl',n:'Incline dumbbell press',sets:3,min:8,max:10,rest:90,inc:1,note:'kg per dumbbell'},
+ {id:'bss',n:'Bulgarian split squat',sets:3,min:8,max:8,rest:60,inc:1,note:'lunge met achterste voet op een bankje · per been, kg per dumbbell'},
+ {id:'face',n:'Face pulls',sets:2,min:12,max:15,rest:60,inc:1},
+ {id:'curl',n:'Biceps curl',sets:3,min:12,max:12,rest:0,inc:1,note:'superset: meteen door naar pushdown'},
+ {id:'push',n:'Triceps pushdown',sets:3,min:12,max:12,rest:60,inc:1,note:'daarna 60 sec rust'},
+ {id:'knee',n:'Hanging knee raises',sets:2,min:10,max:12,rest:45,bw:true},
+ {id:'cardio1B',n:'Conditie',cardio:'8 min stevig fietsen of crosstrainer'}]},
+2:{A:[
+ {id:'lunge',n:'Walking lunges',sets:3,min:10,max:10,rest:90,inc:1,note:'per been, kg per dumbbell'},
+ {id:'dbbench',n:'Dumbbell bankdrukken',sets:4,min:8,max:10,rest:120,inc:1,note:'kg per dumbbell'},
+ {id:'cablerow',n:'Seated cable row',sets:3,min:10,max:12,rest:90,inc:2.5},
+ {id:'hipthrust',n:'Hip thrust',sets:3,min:8,max:10,rest:90,inc:5},
+ {id:'arnold',n:'Arnold press',sets:3,min:10,max:10,rest:90,inc:1,note:'kg per dumbbell'},
+ {id:'sideplank',n:'Zijplank',sets:2,min:30,max:30,rest:30,time:true,note:'per kant'},
+ {id:'cardio2A',n:'Conditie: crosstrainer',cardio:'1 min hard, 1 min rustig, 4 rondes'}],
+ B:[
+ {id:'deadlift',n:'Deadlift',sets:3,min:5,max:5,rest:120,inc:2.5},
+ {id:'pullup',n:'Pull-ups (met hulp of band)',sets:3,min:6,max:8,rest:90,bw:true},
+ {id:'inclbar',n:'Incline bankdrukken (stang)',sets:3,min:6,max:8,rest:90,inc:2.5},
+ {id:'revlunge',n:'Reverse lunges',sets:3,min:8,max:8,rest:60,inc:1,note:'per been, kg per dumbbell'},
+ {id:'revfly',n:'Reverse fly',sets:2,min:12,max:15,rest:60,inc:1,note:'kg per dumbbell'},
+ {id:'hammer',n:'Hammer curl',sets:3,min:10,max:12,rest:0,inc:1,note:'superset: meteen door naar triceps'},
+ {id:'ohtri',n:'Overhead triceps extension',sets:3,min:10,max:12,rest:60,inc:1,note:'daarna 60 sec rust'},
+ {id:'cablecrunch',n:'Cable crunch',sets:2,min:12,max:15,rest:45,inc:2.5},
+ {id:'cardio2B',n:'Conditie',cardio:'8 min roeien in een stevig tempo'}]},
+3:{A:[
+ {id:'stepup',n:'Step-ups',sets:3,min:10,max:10,rest:60,inc:1,note:'op een bankje · per been, kg per dumbbell'},
+ {id:'chestpress',n:'Chest press machine',sets:4,min:8,max:10,rest:120,inc:2.5},
+ {id:'dbrow',n:'Eenarmige dumbbell row',sets:3,min:10,max:10,rest:60,inc:1,note:'per arm'},
+ {id:'kbswing',n:'Kettlebell swings',sets:3,min:15,max:15,rest:60,inc:4,note:'kracht uit je heupen'},
+ {id:'mshoulder',n:'Shoulder press machine',sets:3,min:10,max:12,rest:90,inc:2.5},
+ {id:'deadbug',n:'Dead bug',sets:2,min:10,max:10,rest:45,bw:true,note:'per kant'},
+ {id:'cardio3A',n:'Conditie: intervallen',cardio:'Fiets: 20 sec sprint, 40 sec rustig, 8 rondes'}],
+ B:[
+ {id:'sldl',n:'Eenbenige Roemeense deadlift',sets:3,min:8,max:8,rest:60,inc:1,note:'per been, kg per dumbbell'},
+ {id:'chinlat',n:'Lat pulldown onderhandse greep',sets:3,min:8,max:10,rest:120,inc:2.5},
+ {id:'dips',n:'Dips (met hulp)',sets:3,min:8,max:10,rest:90,bw:true},
+ {id:'legcurl',n:'Leg curl',sets:3,min:10,max:12,rest:60,inc:2.5},
+ {id:'latraise',n:'Lateral raises',sets:2,min:12,max:15,rest:60,inc:1,note:'kg per dumbbell'},
+ {id:'inclcurl',n:'Incline dumbbell curl',sets:3,min:10,max:12,rest:0,inc:1,note:'superset: meteen door naar skull crushers'},
+ {id:'skull',n:'Skull crushers (EZ-stang)',sets:3,min:10,max:12,rest:60,inc:2.5,note:'daarna 60 sec rust'},
+ {id:'pallof',n:'Pallof press',sets:2,min:10,max:10,rest:45,inc:2.5,note:'per kant'},
+ {id:'cardio3B',n:'Conditie',cardio:'8 min stevig crosstrainer'}]}};
+const MUSCLES={"legpress": "Bovenbenen (voorkant), billen", "bench": "Borst, triceps, voorkant schouders", "row": "Rug, biceps", "rdl": "Hamstrings, billen, onderrug", "ohp": "Schouders, triceps", "plank": "Buikspieren, core", "trap": "Bovenbenen, billen, hamstrings, rug", "lat": "Brede rugspier, biceps", "incl": "Bovenkant borst, schouders, triceps", "bss": "Bovenbenen, billen", "face": "Achterkant schouders, bovenrug", "curl": "Biceps", "push": "Triceps", "knee": "Onderbuik, heupbuigers", "lunge": "Bovenbenen, billen", "dbbench": "Borst, triceps, voorkant schouders", "cablerow": "Rug, biceps", "hipthrust": "Billen, hamstrings", "arnold": "Schouders", "sideplank": "Schuine buikspieren", "deadlift": "Hamstrings, billen, onderrug, rug", "pullup": "Brede rugspier, biceps", "inclbar": "Bovenkant borst, schouders, triceps", "revlunge": "Bovenbenen, billen", "revfly": "Achterkant schouders, bovenrug", "hammer": "Biceps, onderarmen", "ohtri": "Triceps", "cablecrunch": "Buikspieren", "stepup": "Bovenbenen, billen", "chestpress": "Borst, triceps", "dbrow": "Rug, biceps", "kbswing": "Billen, hamstrings, conditie", "mshoulder": "Schouders, triceps", "deadbug": "Buikspieren, core", "sldl": "Hamstrings, billen, balans", "chinlat": "Brede rugspier, biceps", "dips": "Triceps, borst", "legcurl": "Hamstrings", "latraise": "Zijkant schouders", "inclcurl": "Biceps", "skull": "Triceps", "pallof": "Core, schuine buikspieren"};
+const musclesOf=e=>e.cardio?'Hart en longen (conditie)':(MUSCLES[e.id]||'');
+const ANCHOR=Date.UTC(2026,10,23); /* maandag 23 nov 2026 = blok 1, week 1 */
+const weeksSince=s=>{const [y,m,d]=s.split('-').map(Number);return Math.floor((Date.UTC(y,m-1,d)-ANCHOR)/864e5/7)};
+const mod3=n=>((n%3)+3)%3;
+const weekOf=s=>mod3(Math.floor(weeksSince(s)/3))+1;   /* welk blok */
+const weekInBlock=s=>mod3(weeksSince(s))+1;            /* week 1, 2 of 3 binnen het blok */
+const planOf=x=>PLANS[x.week||1][x.type];
+const ALL=(()=>{const m={};Object.values(PLANS).forEach(w=>[...w.A,...w.B].forEach(e=>m[e.id]=e));return Object.values(m)})();
+const WARM=['4 min roeien of fietsen','Armen en heupen losdraaien (1 min)'];
+const COOL=['Benen, borst en schouders rekken (3 min)'];
+
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const nlDate=s=>new Date(s+'T12:00:00').toLocaleDateString('nl-NL',{weekday:'long',day:'numeric',month:'long'});
+const num=v=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:null};
+const pl=(n,one,many)=>n+' '+(n===1?one:many);
+const fmt=x=>String(Math.round(x*10)/10).replace('.',',');
+
+let S={history:[],draft:null,weights:[],swims:[]};
+let view=[1,3].includes(new Date().getDay())?'swim':'today',dbDoc=null,saveT=null,saving=false,again=false;
+
+function newDraft(type,week){
+  const items={};week=week||weekOf(today());
+  const wu={};
+  PLANS[week][type].forEach(e=>{
+    if(e.cardio){items[e.id]={done:false};return}
+    const last=lastFor(e.id),weighted=!e.time&&!e.bw;
+    /* gewichten van de vorige keer alvast invullen */
+    items[e.id]=Array.from({length:e.sets},(_,i)=>{const p=last&&last.raw[i];return {kg:weighted&&p&&p.done&&p.kg?p.kg:'',reps:'',done:false}});
+    if(weighted)wu[e.id]={kg:last&&last.wu&&last.wu.kg?last.wu.kg:'',reps:'',done:false};
+  });
+  return {date:today(),week,type,items,wu,warm:WARM.map(()=>false),cool:COOL.map(()=>false)};
+}
+function autoType(){
+  const d=new Date().getDay();
+  if(d===2)return 'A';if(d===4)return 'B';
+  const last=S.history[S.history.length-1];return last&&last.type==='A'?'B':'A';
+}
+function ensureDraft(){if(!S.draft||!S.draft.week||!S.draft.wu||S.draft.date!==today())S.draft=newDraft(autoType())}
+function lastFor(id){
+  for(let i=S.history.length-1;i>=0;i--){if(S.history[i].date===today())continue;const it=S.history[i].items[id];if(Array.isArray(it)&&it.some(s=>s.done&&num(s.reps)!=null)){const h=S.history[i];return {date:h.date,sets:it.filter(s=>s.done),raw:it,wu:h.wu&&h.wu[id]&&h.wu[id].done?h.wu[id]:null}}}
+  return null;
+}
+function advice(e,last){
+  if(!last||e.cardio)return '';
+  const reps=last.sets.map(s=>num(s.reps)).filter(x=>x!=null);
+  const kgs=last.sets.map(s=>num(s.kg)).filter(x=>x!=null);
+  const kg=kgs.length?Math.max(...kgs):null;
+  const lastTxt=(kg!=null?fmt(kg)+' kg · ':'')+reps.join(' ')+(e.time?' sec':' reps');
+  let tip='';
+  if(reps.length>=e.sets&&reps.every(r=>r>=e.max)){
+    tip=e.time?'<b>Alle sets gehaald:</b> houd elke set 5–10 sec langer vol.'
+      :e.bw?'<b>Alle sets gehaald:</b> doe er 1–2 herhalingen bij, of houd een dumbbell tussen je voeten.'
+      :'<b>Alle sets gehaald:</b> probeer vandaag '+fmt(kg+e.inc)+' kg.';
+  }else if(reps.some(r=>r<e.min)){
+    tip='<b>Nog niet alles gehaald:</b> blijf op '+(kg!=null?fmt(kg)+' kg':'hetzelfde gewicht')+'.';
+  }else tip='<b>Bijna:</b> zelfde gewicht, probeer meer herhalingen.';
+  return '<div class="tip">Vorige keer: '+esc(lastTxt)+'<br>'+tip+'</div>';
+}
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+
+function warmRow(e){
+  const w=S.draft.wu&&S.draft.wu[e.id];if(!w)return '';
+  return '<div class="row wu"><span class="n" title="Opwarmset">W</span>'+
+   '<label><input inputmode="decimal" data-ex="'+e.id+'" data-s="w" data-f="kg" value="'+esc(w.kg)+'" placeholder="licht" aria-label="Opwarmset kilo"><span>kg</span></label>'+
+   '<label><input inputmode="numeric" data-ex="'+e.id+'" data-s="w" data-f="reps" value="'+esc(w.reps)+'" placeholder="10" aria-label="Opwarmset herhalingen"><span>reps</span></label>'+
+   '<button class="chk" data-ex="'+e.id+'" data-s="w" aria-pressed="'+w.done+'" aria-label="Opwarmset afvinken">'+CHECK+'</button></div>';
+}
+function progress(D){
+  const up=[],first=[];let cmp=0;
+  planOf(D).forEach(e=>{
+    if(e.cardio)return;
+    const cur=D.items[e.id].filter(s=>s.done);if(!cur.length)return;
+    const prev=lastFor(e.id);if(!prev){first.push(e.n);return}cmp++;
+    const sum=a=>a.reduce((t,s)=>t+(num(s.reps)||0),0);
+    const mk=a=>{const k=a.map(s=>num(s.kg)).filter(x=>x!=null);return k.length?Math.max(...k):null};
+    const ck=mk(cur),pk=mk(prev.sets);
+    if(!e.time&&!e.bw&&ck!=null&&pk!=null&&ck>pk)up.push({n:e.n,t:fmt(pk)+' → '+fmt(ck)+' kg',d:'+'+fmt(ck-pk)+' kg'});
+    else if((e.time||e.bw||ck===pk)&&sum(cur)>sum(prev.sets))up.push({n:e.n,t:sum(prev.sets)+' → '+sum(cur)+(e.time?' sec':' reps')+' totaal',d:'meer '+(e.time?'tijd':'herhalingen')});
+  });
+  return {up,first,cmp};
+}
+function celebrate(r){
+  let h;
+  if(r.up.length){
+    h='<h2>Voortgang geboekt!</h2><p>Je hebt '+r.up.length+(r.up.length===1?' oefening':' oefeningen')+' zwaarder of beter gedaan dan de vorige keer.</p><ul class="wins">'+
+      r.up.map(u=>'<li><b>'+esc(u.n)+'</b><span>'+esc(u.t)+'</span><em>'+esc(u.d)+'</em></li>').join('')+'</ul>';
+  }else if(!r.cmp){
+    h='<h2>Training opgeslagen</h2><p>Dit was de eerste keer voor deze oefeningen. Je gewichten staan vast, zodat ze de volgende keer al ingevuld zijn.</p>';
+  }else{
+    h='<h2>Training opgeslagen</h2><p>Geen zwaardere gewichten deze keer, en dat is prima. Kijk bij de volgende keer naar de tips bij elke oefening.</p>';
+  }
+  $('celBody').innerHTML=h;$('cel').hidden=false;$('celOk').focus();
+}
+/* geschatte duur: per set werktijd (± 3,5 sec per herhaling, x2 bij per been/arm/kant) + 15 sec wisselen + rust,
+   plus 1,25 min per opwarmset, de conditie, 5 min warming-up en 3 min cooling-down */
+function duration(D){
+  let t=8;
+  planOf(D).forEach(e=>{
+    if(e.cardio){t+=8;return}
+    let work=e.time?e.max:e.max*3.5;if(/per (been|arm|kant)/.test(e.note||''))work*=2;
+    t+=e.sets*(work+15+e.rest)/60;if(!e.time&&!e.bw)t+=1.25;
+  });
+  return Math.round(t);
+}
+function counts(){
+  let t=0,d=0;const D=S.draft;
+  planOf(D).forEach(e=>{const it=D.items[e.id];if(e.cardio){t++;if(it.done)d++}else it.forEach(s=>{t++;if(s.done)d++})});
+  return {t,d};
+}
+function renderHead(){
+  if(view==='swim'){
+    $('date').textContent=nlDate(today());$('title').textContent='Zwemmen';
+    const wk=swimWeeks()[0],cur=wk&&wk.key===mondayOf(today())?wk:null;
+    $('swimHead').textContent=cur?'Deze week: '+cur.n+'× gezwommen · '+fmtM(cur.m)+' · '+fmtDur(cur.sec):'Deze week nog niet gezwommen';
+    return;
+  }
+  const D=S.draft,{t,d}=counts();
+  $('date').textContent=nlDate(D.date);
+  $('title').textContent='Blok '+D.week+' · Training '+D.type;
+  $('blokInfo').textContent='Week '+weekInBlock(D.date)+' van 3 in dit blok';
+  [1,2,3].forEach(w=>$('w'+w).setAttribute('aria-pressed',D.week===w));
+  $('segA').setAttribute('aria-pressed',D.type==='A');$('segB').setAttribute('aria-pressed',D.type==='B');
+  $('barFill').style.width=(t?d/t*100:0)+'%';
+  $('progTxt').textContent=d+' van '+t+' sets klaar';
+  $('dur').textContent='± '+duration(D)+' min';
+}
+function checklist(key,arr,title){
+  return '<section class="card"><div class="head"><h3>'+title+'</h3></div><ul class="list">'+arr.map((x,i)=>
+   '<li><button class="chk" data-list="'+key+'" data-i="'+i+'" aria-pressed="'+S.draft[key][i]+'" aria-label="'+esc(x)+' afvinken">'+CHECK+'</button><span>'+esc(x)+'</span></li>').join('')+'</ul></section>';
+}
+function renderToday(){
+  const D=S.draft;
+  let h=checklist('warm',WARM,'Warming-up · 5 min');
+  h+=planOf(D).map(e=>{
+    const it=D.items[e.id];
+    if(e.cardio)return '<section class="card'+(it.done?' done':'')+'"><div class="head"><div><h3>'+esc(e.n)+'</h3><div class="meta">'+esc(e.cardio)+'</div></div></div>'+'<div class="mus">'+musclesOf(e).split(', ').map(m=>'<span>'+esc(m)+'</span>').join('')+'</div>'+
+      '<div class="simple"><span>Gedaan?</span><button class="chk" data-ex="'+e.id+'" data-s="-1" aria-pressed="'+it.done+'" aria-label="Conditie afvinken">'+CHECK+'</button></div></section>';
+    const last=lastFor(e.id),lastKg=last?last.sets.map(s=>num(s.kg)).filter(x=>x!=null):[];
+    const lastReps=last?last.sets.map(s=>num(s.reps)).filter(x=>x!=null):[];
+    const up=lastKg.length&&lastReps.length>=e.sets&&lastReps.every(r=>r>=e.max);
+    const ph=lastKg.length?fmt(Math.max(...lastKg)+(up?e.inc:0)):'0';
+    const target=e.sets+'×'+(e.min===e.max?e.min:e.min+'–'+e.max)+(e.time?' sec':'');
+    const rest=e.rest?(e.rest>=120?'2 min':e.rest+' sec')+' rust':'geen rust';
+    const allDone=it.every(s=>s.done);
+    return '<section class="card'+(allDone?' done':'')+'"><div class="head"><div><h3>'+esc(e.n)+'</h3><div class="meta">'+esc(rest)+(e.note?' · '+esc(e.note):'')+'</div></div><span class="badge">'+esc(target)+'</span></div>'+'<div class="mus">'+musclesOf(e).split(', ').map(m=>'<span>'+esc(m)+'</span>').join('')+'</div>'+
+      advice(e,last)+'<div class="sets">'+warmRow(e)+it.map((s,i)=>
+      '<div class="row"><span class="n">'+(i+1)+'</span>'+
+      (e.time||e.bw?'<span class="meta">'+(e.bw?'eigen gewicht':'')+'</span>':'<label><input inputmode="decimal" data-ex="'+e.id+'" data-s="'+i+'" data-f="kg" value="'+esc(s.kg)+'" placeholder="'+ph+'" aria-label="Set '+(i+1)+' kilo"><span>kg</span></label>')+
+      '<label><input inputmode="numeric" data-ex="'+e.id+'" data-s="'+i+'" data-f="reps" value="'+esc(s.reps)+'" placeholder="'+e.max+'" aria-label="Set '+(i+1)+(e.time?' seconden':' herhalingen')+'"><span>'+(e.time?'sec':'reps')+'</span></label>'+
+      '<button class="chk" data-ex="'+e.id+'" data-s="'+i+'" aria-pressed="'+s.done+'" aria-label="Set '+(i+1)+' afvinken">'+CHECK+'</button></div>').join('')+'</div></section>';
+  }).join('');
+  h+=checklist('cool',COOL,'Cooling-down · 3 min');
+  h+='<button class="finish" id="finish">Training opslaan</button><p class="note" id="status"></p>';
+  $('main').innerHTML=h;renderHead();setStatus();
+}
+function backupCard(){
+  return '<section class="card" id="backup"><h3>Backup</h3><div class="meta">Al je trainingen, zwemtrainingen en je gewicht in één stuk tekst. Bewaar die bijvoorbeeld in Notities, of gebruik hem om je gegevens naar een andere versie van de app over te zetten.</div>'+
+   '<div class="bk"><button class="finish" id="bkCopy">Kopieer backup</button>'+(IS_PWA?'<button class="finish alt" id="bkDown">Bewaar als bestand</button>':'')+'</div>'+
+   '<label class="bkl"><small>Backup terugzetten: plak hier de tekst</small><textarea id="bkText" rows="4" spellcheck="false" placeholder="{&quot;app&quot;:&quot;gymapp&quot;, …}"></textarea></label>'+
+   '<button class="finish alt" id="bkRestore">Backup terugzetten</button><p class="note" id="bkMsg" aria-live="polite"></p></section>';
+}
+function backupJSON(){return JSON.stringify({app:'gymapp',v:1,exported:new Date().toISOString(),history:S.history,weights:S.weights,swims:S.swims})}
+function renderHist(){
+  if(!S.history.length){$('main').innerHTML='<div class="card empty">Nog geen trainingen opgeslagen. Rond je eerste training af met <b>Training opslaan</b>.</div>'+backupCard();return}
+  const all=ALL.filter(e=>!e.cardio&&!e.time&&!e.bw);
+  const sel=view.split(':')[1]||all[0].id;
+  const pts=[];
+  S.history.forEach(hh=>{const it=hh.items[sel];if(Array.isArray(it)){const k=it.filter(s=>s.done).map(s=>num(s.kg)).filter(x=>x!=null);if(k.length)pts.push({d:hh.date,kg:Math.max(...k)})}});
+  const mx=Math.max(1,...pts.map(p=>p.kg));
+  let h='<section class="card"><h3>Voortgang</h3><select class="pick" id="pick" aria-label="Kies oefening">'+all.map(e=>'<option value="'+e.id+'"'+(e.id===sel?' selected':'')+'>'+esc(e.n)+'</option>').join('')+'</select>'+
+   (pts.length?'<div class="bars">'+pts.slice(-10).map(p=>'<div><span>'+esc(new Date(p.d+'T12:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'}))+'</span><i style="width:'+(p.kg/mx*100)+'%"></i><span class="v">'+fmt(p.kg)+' kg</span></div>').join('')+'</div>':'<p class="empty">Nog geen gewicht gelogd voor deze oefening.</p>')+'</section>';
+  h+=S.history.slice().reverse().map((hh,ri)=>{
+    const idx=S.history.length-1-ri;
+    const lines=(hh.week?planOf(hh):ALL).filter(e=>!e.cardio).map(e=>{const it=(hh.items[e.id]||[]).filter(s=>s.done);if(!it.length)return '';
+      const k=it.map(s=>num(s.kg)).filter(x=>x!=null);return '<li>'+esc(e.n)+': '+(k.length?esc(fmt(Math.max(...k)))+' kg · ':'')+esc(it.map(s=>s.reps||'–').join(' '))+'</li>'}).join('');
+    return '<section class="card hist"><div class="day"><h3>'+(hh.week?'Blok '+esc(hh.week)+' · ':'')+'Training '+esc(hh.type)+'</h3><span class="badge">'+esc(nlDate(hh.date))+'</span></div><ul>'+(lines||'<li>Geen sets afgevinkt</li>')+'</ul><button class="del" data-del="'+idx+'">Verwijder</button></section>';
+  }).join('');
+  $('main').innerHTML=h+backupCard();
+}
+function render(){
+  $('tabT').setAttribute('aria-pressed',view==='today');$('tabH').setAttribute('aria-pressed',view.startsWith('hist'));$('tabW').setAttribute('aria-pressed',view==='weight');$('tabS').setAttribute('aria-pressed',view==='swim');
+  $('top').classList.toggle('swimmode',view==='swim');
+  if(wRO){wRO.disconnect();wRO=null}
+  view==='today'?renderToday():view==='weight'?renderWeight():view==='swim'?renderSwim():renderHist();renderHead()}
+/* zwemmen */
+const mondayOf=ds=>{const d=new Date(ds+'T12:00:00');const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtM=m=>m.toLocaleString('nl-NL')+' m';
+const fmtDur=sec=>{sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s2=sec%60;return h?h+':'+String(m).padStart(2,'0')+' uur':m+':'+String(s2).padStart(2,'0')+' min'};
+const fmtPace=p=>{p=Math.round(p);return Math.floor(p/60)+':'+String(p%60).padStart(2,'0')+' /100 m'};
+const pace=x=>x.sec/(x.meters/100);
+function swimWeeks(){
+  const g={};S.swims.forEach(x=>{const k=mondayOf(x.date);(g[k]=g[k]||{key:k,n:0,m:0,sec:0}).n++;g[k].m+=x.meters;g[k].sec+=x.sec});
+  return Object.values(g).sort((a,b)=>a.key<b.key?1:-1);
+}
+function readSwimForm(){
+  const laps=num($('sLaps').value),len=num($('sLen').value),mi=num($('sMin').value)||0,se=num($('sSec').value)||0;
+  return {laps,len,sec:mi*60+se,meters:laps&&len?Math.round(laps*len):0};
+}
+function swimLive(){
+  const f=readSwimForm(),el=$('sLive');if(!el)return;
+  el.innerHTML=f.meters&&f.sec?'<b>'+esc(fmtM(f.meters))+'</b> in <b>'+esc(fmtDur(f.sec))+'</b> · tempo <b>'+esc(fmtPace(f.sec/(f.meters/100)))+'</b>':'Vul banen en tijd in, dan reken ik meters en tempo uit.';
+}
+function renderSwim(){
+  const t=today(),dow=new Date().getDay();
+  const last=S.swims[S.swims.length-1],todayS=S.swims.find(x=>x.date===t);
+  const len=todayS?todayS.len:last?last.len:25;
+  let h='<section class="card"><h3>'+([1,3].includes(dow)?'Zwemdag! Hoe ging het?':'Zwemtraining invullen')+'</h3><div class="meta">Maandag en woensdag zijn je zwemdagen.</div>'+
+   '<form id="sForm" class="swin">'+
+   '<label><small>Aantal banen</small><input id="sLaps" inputmode="numeric" value="'+(todayS?esc(todayS.laps):'')+'" placeholder="'+(last?esc(last.laps):'40')+'"></label>'+
+   '<label><small>Lengte bad</small><select id="sLen">'+[25,50,20,33.3].map(v=>'<option value="'+v+'"'+(v==len?' selected':'')+'>'+String(v).replace('.',',')+' meter</option>').join('')+'</select></label>'+
+   '<label><small>Minuten</small><input id="sMin" inputmode="numeric" value="'+(todayS?Math.floor(todayS.sec/60):'')+'" placeholder="45"></label>'+
+   '<label><small>Seconden</small><input id="sSec" inputmode="numeric" value="'+(todayS?todayS.sec%60:'')+'" placeholder="0"></label>'+
+   '<label class="full"><small>Datum</small><input id="sDate" type="date" value="'+t+'" max="'+t+'"></label>'+
+   '<label class="full"><small>Notitie (mag leeg)</small><input id="sNote" value="'+(todayS?esc(todayS.note||''):'')+'" placeholder="bijv. schoolslag, rustig tempo"></label>'+
+   '<div class="live" id="sLive" aria-live="polite"></div>'+
+   '<button class="finish" type="submit">Zwemtraining opslaan</button></form><p class="note" id="sMsg"></p></section>';
+  const W=swimWeeks();
+  if(!W.length){h+='<div class="card empty">Nog geen zwemtrainingen. Na je eerste keer zie je hier je weekoverzicht.</div>';$('main').innerHTML=h;swimLive();return}
+  const mx=Math.max(...W.map(w=>w.m));
+  h+='<section class="card"><h3>Per week</h3><div class="meta">Tempo = gemiddelde tijd per 100 meter. Lager is sneller.</div>'+W.slice(0,10).map((w,i)=>{
+    const p=w.sec/(w.m/100),prev=W[i+1];let cmp='';
+    if(prev&&(Date.parse(w.key)-Date.parse(prev.key))===7*864e5){
+      const dm=w.m-prev.m,dp=p-prev.sec/(prev.m/100);
+      cmp=' · <span class="'+(dm>=0?'up':'down')+'">'+(dm>=0?'+':'−')+esc(fmtM(Math.abs(dm)))+'</span>'+
+          (Math.abs(dp)>=1?' · <span class="'+(dp<0?'up':'down')+'">'+(dp<0?Math.round(-dp)+' sec sneller':Math.round(dp)+' sec langzamer')+'</span>':'');
+    }
+    return '<div class="wk"><div class="l1"><span>Week van '+esc(shortDate(w.key))+'</span><span>'+esc(fmtM(w.m))+'</span></div><div class="meter"><i style="width:'+(w.m/mx*100)+'%"></i></div>'+
+      '<div class="l2">'+w.n+'× gezwommen · '+esc(fmtDur(w.sec))+' · '+esc(fmtPace(p))+cmp+'</div></div>';
+  }).join('')+'</section>';
+  h+='<section class="card"><h3>Alle zwemtrainingen</h3><ul class="wlist">'+S.swims.slice().reverse().map(x=>'<li><span>'+esc(nlDate(x.date))+'<br><small class="meta">'+esc(x.laps)+' banen × '+esc(String(x.len).replace('.',','))+' m · '+esc(fmtDur(x.sec))+' · '+esc(fmtPace(pace(x)))+(x.note?' · '+esc(x.note):'')+'</small></span><b>'+esc(fmtM(x.meters))+'</b><button class="del" data-sdel="'+esc(x.date)+'">Verwijder</button></li>').join('')+'</ul></section>';
+  $('main').innerHTML=h;swimLive();
+}
+/* lichaamsgewicht */
+let wRO=null;
+const shortDate=d=>new Date(d+'T12:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'});
+function avgSince(days){const lim=new Date(Date.now()-days*864e5);const a=S.weights.filter(w=>new Date(w.date+'T12:00:00')>=lim).map(w=>w.kg);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
+function renderWeight(){
+  const W=S.weights,last=W[W.length-1],first=W[0],t=today();
+  const todayW=W.find(w=>w.date===t);
+  let h='<section class="card"><h3>Gewicht invullen</h3><div class="meta">Weeg jezelf steeds op hetzelfde moment: \'s ochtends, na het plassen en voor het ontbijt.</div>'+
+    '<form id="wForm" class="wform"><label><input id="wKg" inputmode="decimal" placeholder="'+(last?esc(fmt(last.kg)):'75')+'" value="'+(todayW?esc(fmt(todayW.kg)):'')+'" aria-label="Je gewicht in kilo"><span>kg</span></label>'+
+    '<input id="wDate" type="date" value="'+t+'" max="'+t+'" aria-label="Datum"><button class="finish" type="submit">Opslaan</button></form><p class="note" id="wMsg"></p></section>';
+  if(!W.length){h+='<div class="card empty">Nog geen gewicht ingevuld. Vul hierboven je eerste meting in.</div>';$('main').innerHTML=h;return}
+  const diff=last.kg-first.kg,avg=avgSince(7);
+  h+='<section class="card"><div class="stats"><div><small>Nu</small><b>'+esc(fmt(last.kg))+' kg</b></div>'+
+    '<div><small>Sinds start</small><b>'+(diff>0?'+':'')+esc(fmt(diff))+' kg</b></div>'+
+    '<div><small>Gem. 7 dagen</small><b>'+(avg!=null?esc(fmt(avg))+' kg':'–')+'</b></div></div>'+
+    (W.length>1?'<div class="fig" id="wFig"><svg id="wSvg" role="img" aria-label="Grafiek van je gewicht"></svg></div>':'<p class="meta">Na je tweede meting verschijnt hier een grafiek.</p>')+
+    '<p class="meta">Je gewicht schommelt van dag tot dag 1 à 2 kilo door vocht en eten. Kijk daarom naar de lijn over weken, niet naar één dag. Als je spieren opbouwt, kan je gewicht ook langzaam stijgen.</p></section>';
+  h+='<section class="card"><h3>Metingen</h3><ul class="wlist">'+W.slice().reverse().map(w=>'<li><span>'+esc(nlDate(w.date))+'</span><b>'+esc(fmt(w.kg))+' kg</b><button class="del" data-wdel="'+esc(w.date)+'">Verwijder</button></li>').join('')+'</ul></section>';
+  $('main').innerHTML=h;
+  const svg=$('wSvg');if(!svg)return;
+  const draw=()=>{
+    const Wd=svg.clientWidth,H=svg.clientHeight;if(!Wd||!H)return;
+    const pad={l:44,r:12,t:14,b:26};
+    const xs=W.map(w=>new Date(w.date+'T12:00:00').getTime()),ys=W.map(w=>w.kg);
+    let y0=Math.min(...ys),y1=Math.max(...ys);if(y1-y0<2){const m=(y0+y1)/2;y0=m-1;y1=m+1}
+    const x0=Math.min(...xs),x1=Math.max(...xs)||x0+1;
+    const X=v=>pad.l+(x1===x0?0.5:(v-x0)/(x1-x0))*(Wd-pad.l-pad.r),Y=v=>pad.t+(1-(v-y0)/(y1-y0))*(H-pad.t-pad.b);
+    const ticks=[y0,(y0+y1)/2,y1];
+    let g=ticks.map(v=>'<line x1="'+pad.l+'" x2="'+(Wd-pad.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="currentColor" stroke-opacity=".12"/><text x="'+(pad.l-8)+'" y="'+(Y(v)+4)+'" text-anchor="end" font-size="12" fill="currentColor" fill-opacity=".6">'+fmt(v)+'</text>').join('');
+    const pts=W.map((w,i)=>X(xs[i])+','+Y(w.kg)).join(' ');
+    g+='<polyline points="'+pts+'" fill="none" stroke="#ef4a2b" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
+    if(W.length<=40)g+=W.map((w,i)=>'<circle cx="'+X(xs[i])+'" cy="'+Y(w.kg)+'" r="4" fill="#ef4a2b"/>').join('');
+    g+='<text x="'+pad.l+'" y="'+(H-6)+'" font-size="12" fill="currentColor" fill-opacity=".6">'+esc(shortDate(W[0].date))+'</text>';
+    g+='<text x="'+(Wd-pad.r)+'" y="'+(H-6)+'" text-anchor="end" font-size="12" fill="currentColor" fill-opacity=".6">'+esc(shortDate(last.date))+'</text>';
+    svg.innerHTML=g;
+  };
+  if(window.ResizeObserver){wRO=new ResizeObserver(draw);wRO.observe(svg)}draw();
+}
+
+let statusMsg='',justFinished=false;
+function setStatus(m){if(m!=null)statusMsg=m;const el=$('status');if(el)el.textContent=statusMsg}
+
+/* opslaan: per persoon in de app-database, anders in deze browser */
+function save(){clearTimeout(saveT);saveT=setTimeout(flush,700)}
+async function flush(){
+  try{localStorage.setItem('gymapp',JSON.stringify(S))}catch(e){}
+  if(dbDoc){
+    if(saving){again=true;return}
+    saving=true;
+    try{await dbDoc.set({json:JSON.stringify(S)});setStatus(justFinished?'Training opgeslagen in je account. Goed bezig!':'Opgeslagen in je account')}catch(e){setStatus('Opslaan mislukt, probeer het zo nog eens')}
+    saving=false;if(again){again=false;flush()}
+  }else{try{localStorage.setItem('gymapp',JSON.stringify(S));setStatus(justFinished?'Training opgeslagen. Goed bezig!':'Opgeslagen op dit apparaat')}catch(e){setStatus('Let op: opslaan lukt hier niet')}}
+}
+function load(o){if(o&&Array.isArray(o.history)){S={history:o.history,draft:o.draft||null,weights:Array.isArray(o.weights)?o.weights:[],swims:Array.isArray(o.swims)?o.swims:[]}}ensureDraft()}
+
+/* rusttimer */
+let tEnd=0,tInt=null,actx=null;
+function beep(){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+.4)}catch(e){}try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
+function tick(){const left=Math.max(0,Math.round((tEnd-Date.now())/1000));$('tLeft').textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');if(!left){stopTimer();beep()}}
+function startTimer(sec){if(!sec)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)()}catch(e){}tEnd=Date.now()+sec*1000;clearInterval(tInt);tInt=setInterval(tick,250);tick();$('timer').classList.add('on')}
+function stopTimer(){clearInterval(tInt);$('timer').classList.remove('on')}
+$('tPlus').onclick=()=>{tEnd+=30000;tick()};
+$('tSkip').onclick=stopTimer;
+$('celOk').onclick=()=>{$('cel').hidden=true};
+$('cel').addEventListener('click',ev=>{if(ev.target.id==='cel')$('cel').hidden=true});
+
+/* events */
+$('main').addEventListener('input',ev=>{
+  const t=ev.target;if(!t.dataset||!t.dataset.f)return;
+  const tgt=t.dataset.s==='w'?S.draft.wu[t.dataset.ex]:S.draft.items[t.dataset.ex][+t.dataset.s];
+  tgt[t.dataset.f]=t.value.trim();justFinished=false;save();
+});
+$('main').addEventListener('change',ev=>{if(ev.target.id==='pick'){view='hist:'+ev.target.value;render()}});
+$('main').addEventListener('click',ev=>{
+  const b=ev.target.closest('button');if(!b)return;
+  if(b.dataset.list){const a=S.draft[b.dataset.list];a[+b.dataset.i]=!a[+b.dataset.i];save();render();return}
+  if(b.dataset.ex){
+    const e=planOf(S.draft).find(x=>x.id===b.dataset.ex),it=S.draft.items[e.id],i=+b.dataset.s;
+    if(b.dataset.s==='w'){const w=S.draft.wu[e.id];w.done=!w.done;if(w.done){if(!w.reps)w.reps='10';startTimer(60)}save();render();return}
+    if(i<0){it.done=!it.done}else{
+      const s=it[i];s.done=!s.done;
+      if(s.done){
+        if(!s.reps)s.reps=String(e.max);
+        if(!s.kg&&!e.time&&!e.bw){const prev=i>0?it[i-1].kg:'';const inp=b.parentNode.querySelector('input[data-f=kg]');s.kg=prev||(inp&&inp.placeholder!=='0'?inp.placeholder:'')}
+        startTimer(e.rest);
+      }
+    }
+    save();render();return;
+  }
+  if(b.id==='finish'){
+    const {d}=counts();
+    if(!d){setStatus('Vink eerst minstens één set af.');return}
+    const i=S.history.findIndex(h=>h.date===S.draft.date&&h.type===S.draft.type);
+    const copy=JSON.parse(JSON.stringify(S.draft));
+    const rep=progress(S.draft);
+    if(i>=0)S.history[i]=copy;else S.history.push(copy);
+    S.history.sort((a,b)=>a.date<b.date?-1:1);
+    justFinished=true;save();celebrate(rep);return;
+  }
+  if(b.id==='bkCopy'){
+    const txt=backupJSON(),msg=$('bkMsg'),ta=$('bkText');
+    const fallback=()=>{ta.value=txt;ta.focus();ta.select();msg.textContent='Kopiëren lukte niet automatisch. De backup staat in het vak hieronder: selecteer alles en kopieer.'};
+    try{navigator.clipboard.writeText(txt).then(()=>{msg.textContent='Backup gekopieerd ('+pl(S.history.length,'training','trainingen')+', '+pl(S.swims.length,'zwemtraining','zwemtrainingen')+', '+pl(S.weights.length,'meting','metingen')+'). Plak hem in Notities of in de andere versie van de app.'},fallback)}catch(e){fallback()}
+    return;
+  }
+  if(b.id==='bkDown'){
+    try{const url=URL.createObjectURL(new Blob([backupJSON()],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='gym-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);$('bkMsg').textContent='Backup-bestand gemaakt.'}catch(e){$('bkMsg').textContent='Bestand maken lukte niet. Gebruik Kopieer backup.'}
+    return;
+  }
+  if(b.id==='bkRestore'){
+    const msg=$('bkMsg');let o;
+    try{o=JSON.parse($('bkText').value.trim())}catch(e){msg.textContent='Dit is geen geldige backup. Plak de hele tekst, vanaf { tot en met }.';return}
+    if(!o||!Array.isArray(o.history)){msg.textContent='Dit lijkt geen backup van deze app.';return}
+    if(!b.dataset.sure){b.dataset.sure='1';b.textContent='Zeker? Dit vervangt alles wat nu in de app staat';msg.textContent='Backup gelezen: '+pl(o.history.length,'training','trainingen')+', '+pl((o.swims||[]).length,'zwemtraining','zwemtrainingen')+', '+pl((o.weights||[]).length,'meting','metingen')+'. Tik nog een keer om terug te zetten.';return}
+    S={history:o.history,draft:null,weights:Array.isArray(o.weights)?o.weights:[],swims:Array.isArray(o.swims)?o.swims:[]};
+    ensureDraft();save();render();$('bkMsg').textContent='Backup teruggezet.';
+    return;
+  }
+  if(b.dataset.sdel){
+    if(b.dataset.sure){S.swims=S.swims.filter(x=>x.date!==b.dataset.sdel);save();render()}
+    else{b.dataset.sure='1';b.textContent='Zeker? Tik nog een keer'}
+    return;
+  }
+  if(b.dataset.wdel){
+    if(b.dataset.sure){S.weights=S.weights.filter(w=>w.date!==b.dataset.wdel);save();render()}
+    else{b.dataset.sure='1';b.textContent='Zeker? Tik nog een keer'}
+    return;
+  }
+  if(b.dataset.del){
+    if(b.dataset.sure){S.history.splice(+b.dataset.del,1);save();render()}
+    else{b.dataset.sure='1';b.textContent='Zeker weten? Tik nog een keer'}
+  }
+});
+$('segA').onclick=()=>switchTo('A',S.draft.week);$('segB').onclick=()=>switchTo('B',S.draft.week);
+function switchTo(t,w){if(S.draft.type===t&&S.draft.week===w)return;const {d}=counts();
+  if(d&&!confirmSwitch){confirmSwitch=true;view='today';render();setStatus('Je hebt al sets afgevinkt. Tik nog een keer om te wisselen.');return}
+  confirmSwitch=false;S.draft=newDraft(t,w);view='today';save();render()}
+[1,2,3].forEach(w=>$('w'+w).onclick=()=>switchTo(S.draft.type,w));
+let confirmSwitch=false;
+$('tabT').onclick=()=>{view='today';render()};
+$('tabH').onclick=()=>{view='hist';render()};
+$('tabW').onclick=()=>{view='weight';render()};
+$('tabS').onclick=()=>{view='swim';render()};
+$('main').addEventListener('input',ev=>{if(ev.target.closest&&ev.target.closest('#sForm'))swimLive()});
+$('main').addEventListener('change',ev=>{if(ev.target.id==='sLen')swimLive()});
+$('main').addEventListener('submit',ev=>{
+  if(ev.target.id!=='sForm')return;ev.preventDefault();
+  const f=readSwimForm(),date=$('sDate').value||today(),msg=$('sMsg');
+  if(!f.laps||f.laps<1||f.laps>400||Math.round(f.laps)!==f.laps){msg.textContent='Vul een heel aantal banen in (1 tot 400).';return}
+  if(!f.sec||f.sec>5*3600||num($('sSec').value)>=60){msg.textContent='Vul een geldige tijd in (seconden 0 tot 59).';return}
+  const p=f.sec/(f.meters/100);
+  if(p<50||p>600){msg.textContent='Dat tempo ('+fmtPace(p)+') klopt waarschijnlijk niet. Kijk je banen en tijd nog even na.';return}
+  if(date>today()){msg.textContent='Een datum in de toekomst kan niet.';return}
+  const prev=S.swims.filter(x=>x.date<date).slice(-1)[0];
+  const rec={date,laps:f.laps,len:f.len,meters:f.meters,sec:f.sec,note:$('sNote').value.trim().slice(0,120)};
+  const i=S.swims.findIndex(x=>x.date===date);if(i>=0)S.swims[i]=rec;else S.swims.push(rec);
+  S.swims.sort((a,b)=>a.date<b.date?-1:1);save();render();
+  const wins=[];
+  if(prev){
+    if(rec.meters>prev.meters)wins.push({n:'Afstand',t:fmtM(prev.meters)+' → '+fmtM(rec.meters),d:'+'+fmtM(rec.meters-prev.meters)});
+    const pp=pace(prev),np=pace(rec);if(pp-np>=1)wins.push({n:'Tempo',t:fmtPace(pp)+' → '+fmtPace(np),d:Math.round(pp-np)+' sec sneller'});
+  }
+  if(wins.length){$('celBody').innerHTML='<h2>Voortgang geboekt!</h2><p>Beter dan je vorige zwemtraining van '+esc(nlDate(prev.date))+'.</p><ul class="wins">'+wins.map(u=>'<li><b>'+esc(u.n)+'</b><span>'+esc(u.t)+'</span><em>'+esc(u.d)+'</em></li>').join('')+'</ul>';$('cel').hidden=false;$('celOk').focus()}
+  $('sMsg').textContent=(i>=0?'Zwemtraining van die dag bijgewerkt: ':'Opgeslagen: ')+fmtM(rec.meters)+' in '+fmtDur(rec.sec)+'.';
+});
+$('main').addEventListener('submit',ev=>{
+  if(ev.target.id!=='wForm')return;ev.preventDefault();
+  const kg=num($('wKg').value),date=$('wDate').value||today();
+  if(kg==null||kg<30||kg>300){$('wMsg').textContent='Vul een gewicht in tussen 30 en 300 kg.';return}
+  if(date>today()){$('wMsg').textContent='Een datum in de toekomst kan niet.';return}
+  const i=S.weights.findIndex(w=>w.date===date);
+  const prev=S.weights.filter(w=>w.date<date).slice(-1)[0];
+  if(i>=0)S.weights[i].kg=kg;else S.weights.push({date,kg});
+  S.weights.sort((a,b)=>a.date<b.date?-1:1);
+  save();render();
+  $('wMsg').textContent=(i>=0?'Meting van die dag bijgewerkt.':'Opgeslagen.')+(prev?' Verschil met vorige meting: '+(kg-prev.kg>0?'+':'')+fmt(kg-prev.kg)+' kg.':'');
+});
+
+/* start */
+let local=null;try{local=JSON.parse(localStorage.getItem('gymapp')||'null')}catch(e){}
+load(local);render();
+/* web-app: offline werken en opslag op deze iPhone zo goed mogelijk vasthouden */
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if(!S.history.length&&!S.swims.length&&!S.weights.length)setStatus('Nieuw hier? Zet je oude gegevens over via Geschiedenis → Backup.');
+}
+</script>
+</body>
+</html>
