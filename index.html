@@ -34,6 +34,30 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--hazard)}
 .wrap{max-width:640px;margin:0 auto}
 .date{font:600 13px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;color:var(--acc);margin-bottom:8px}
+.toprow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.streak{flex:none;display:inline-flex;align-items:center;gap:6px;background:#000;border:1px solid #333;border-radius:4px;padding:4px 10px 4px 8px;font:600 14px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:#fff;white-space:nowrap}
+.streak svg{width:20px;height:20px;color:var(--acc)}
+.streak.zero svg{color:#666}
+.streak b{font:400 20px Anton,sans-serif;color:var(--acc);line-height:1}
+.streak.zero b{color:#888}
+.swimmode .streak svg,.swimmode .streak b{color:var(--swim)}
+.scard{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+.scard div{background:#0a0a0a;border:1px solid var(--line);border-radius:6px;padding:12px}
+.scard small{display:block;color:var(--mute);font:600 12px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.scard b{font:400 clamp(28px,8vw,40px) Anton,sans-serif;color:var(--acc);line-height:1.1}
+.scard b span{font:600 14px Oswald,sans-serif;color:var(--ink);text-transform:uppercase;margin-left:6px}
+.dots{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px;max-width:360px}
+.dots span{font:600 11px Oswald,sans-serif;text-transform:uppercase;color:var(--mute);text-align:center}
+.dots i{aspect-ratio:1;border-radius:3px;background:var(--chip);border:1px solid #2c2c2c}
+.dots i.none{background:transparent;border-color:#1f1f1f}
+.dots i.now{outline:2px solid var(--ink);outline-offset:1px}
+.dots i.on{background:var(--acc);border-color:var(--acc)}
+.dots i.sick{background:#5a1d12;border-color:#5a1d12}
+.dots i.notime{background:#f59e0b;border-color:#f59e0b}
+.dots i.miss{background:transparent;border:1px dashed var(--redInk)}
+.dots i.rest{opacity:.4}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:13px;color:var(--mute)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c)}
 .top h1{font-size:clamp(40px,11vw,62px)}
 .swimhead{display:none;margin:10px 0 0;font-weight:600}
 .swimmode .swimhead{display:block}.swimmode .seg,.swimmode .weeks,.swimmode .bar,.swimmode .prog{display:none}
@@ -45,7 +69,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .swin label>small{display:block;font:600 12px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin-bottom:4px}
 .swin input,.swin select{width:100%;font-size:16px;padding:10px 12px;min-height:46px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:inherit}
 .swin .full{grid-column:1/-1}
-.swin .finish{grid-column:1/-1;margin:4px 0 0;background:var(--swim);color:#04121b}
+.swin .finish{grid-column:1/-1;margin:4px 0 0;background:var(--swim);color:#04121b;box-shadow:0 4px 0 #1a7aa6}
 .live{grid-column:1/-1;background:var(--chip);border-radius:6px;padding:10px 12px;font-size:15px}
 .live b{font-family:Oswald,sans-serif;color:var(--swim)}
 .wk{display:grid;gap:4px;border-top:1px solid var(--line);padding:10px 0}
@@ -157,7 +181,7 @@ main{padding:0 max(5vw,16px)}
 </head>
 <body>
 <header class="top" id="top"><div class="wrap">
-  <div class="date" id="date"></div>
+  <div class="toprow"><div class="date" id="date"></div><span class="streak" id="streak" aria-live="polite"></span></div>
   <h1 id="title">Training</h1>
   <p class="swimhead" id="swimHead"></p>
   <div class="seg" role="group" aria-label="Kies training">
@@ -346,6 +370,8 @@ function celebrate(r){
   }else{
     h='<h2>Training opgeslagen</h2><p>Geen zwaardere gewichten deze keer, en dat is prima. Kijk bij de volgende keer naar de tips bij elke oefening.</p>';
   }
+  const st=streakInfo().cur;
+  if(st>1)h+='<p><b>'+st+' trainingsdagen op rij'+(st>=streakInfo().best?', je record!':'!')+'</b></p>';
   $('celBody').innerHTML=h;$('cel').hidden=false;$('celOk').focus();
 }
 /* geschatte duur: per set werktijd (± 3,5 sec per herhaling, x2 bij per been/arm/kant) + 15 sec wisselen + rust,
@@ -430,7 +456,7 @@ function renderHist(){
     sk='<section class="card"><h3>Overgeslagen</h3><div class="meta">'+pl(S.skips.length,'dag','dagen')+' overgeslagen in totaal.</div><div class="skipsum">'+Object.keys(REASONS).filter(r=>c[r]).map(r=>'<span class="rtag '+r+'">'+REASONS[r]+': '+c[r]+'×</span>').join('')+'</div></section>';
   }
   const entries=S.history.map((hh,i)=>({date:hh.date,h:i})).concat(S.skips.map((s,i)=>({date:s.date,s:i}))).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
-  if(!S.history.length){$('main').innerHTML=sk+entries.map(x=>skipHist(S.skips[x.s],x.s)).join('')+backupCard();return}
+  if(!S.history.length){$('main').innerHTML=streakCard()+sk+entries.map(x=>skipHist(S.skips[x.s],x.s)).join('')+backupCard();return}
   const all=ALL.filter(e=>!e.cardio&&!e.time&&!e.bw);
   const sel=view.split(':')[1]||all[0].id;
   const pts=[];
@@ -438,7 +464,7 @@ function renderHist(){
   const mx=Math.max(1,...pts.map(p=>p.kg));
   let h='<section class="card"><h3>Voortgang</h3><select class="pick" id="pick" aria-label="Kies oefening">'+all.map(e=>'<option value="'+e.id+'"'+(e.id===sel?' selected':'')+'>'+esc(e.n)+'</option>').join('')+'</select>'+
    (pts.length?'<div class="bars">'+pts.slice(-10).map(p=>'<div><span>'+esc(new Date(p.d+'T12:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'}))+'</span><i style="width:'+(p.kg/mx*100)+'%"></i><span class="v">'+fmt(p.kg)+' kg</span></div>').join('')+'</div>':'<p class="empty">Nog geen gewicht gelogd voor deze oefening.</p>')+'</section>';
-  h+=sk;
+  h=streakCard()+h+sk;
   h+=entries.map(x=>{
     if(x.s!=null)return skipHist(S.skips[x.s],x.s);
     const idx=x.h,hh=S.history[idx];
@@ -448,11 +474,54 @@ function renderHist(){
   }).join('');
   $('main').innerHTML=h+backupCard();
 }
+/* streak: trainingsdagen op rij. Ma t/m do zijn je vaste dagen (ma/wo zwemmen, di/do gym).
+   Een vaste dag zonder training breekt de streak, behalve als je hem als 'ziek' of 'geen tijd' hebt overgeslagen (dan staat hij even stil).
+   Vrij, za en zo zijn rustdagen: die breken niets, en train je toch, dan telt dat mee. Vandaag telt pas mee als je getraind hebt. */
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const PLANNED=[1,2,3,4];
+function dayStatus(ds,act){
+  const dow=new Date(ds+'T12:00:00').getDay();
+  if(act.has(ds))return 'on';
+  const sk=S.skips.find(x=>x.date===ds&&(x.reason==='ziek'||x.reason==='tijd'));
+  if(sk)return sk.reason==='ziek'?'sick':'notime';
+  if(!PLANNED.includes(dow))return 'rest';
+  return ds===today()?'open':'miss';
+}
+function streakInfo(){
+  const act=new Set(S.history.map(h=>h.date).concat(S.swims.map(x=>x.date)));
+  const first=[...act].concat(S.skips.map(x=>x.date)).sort()[0];
+  if(!first)return {cur:0,best:0,act};
+  let cur=0,best=0;const d=new Date(first+'T12:00:00'),end=today();
+  for(let ds=ymd(d);ds<=end;d.setDate(d.getDate()+1),ds=ymd(d)){
+    const st=dayStatus(ds,act);
+    if(st==='on'){cur++;if(cur>best)best=cur}else if(st==='miss')cur=0;
+  }
+  return {cur,best,act};
+}
+const FLAME='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.5 2c1 3.5-1 5.5-2.7 7.2C8.3 10.7 6.5 12.4 6.5 15.2a5.5 5.5 0 0 0 11 0c0-2.2-1-3.9-2.2-5.1.1 1.7-.7 2.9-2 3.4.7-3.6-.1-7.5-.8-11.5z"/></svg>';
+function renderStreak(){
+  const {cur}=streakInfo(),el=$('streak');
+  el.className='streak'+(cur?'':' zero');
+  el.innerHTML=FLAME+'<b>'+cur+'</b>'+(cur===1?'dag':'dagen')+' op rij';
+  el.title='Trainingsdagen op rij';
+}
+function streakCard(){
+  const {cur,best,act}=streakInfo();
+  /* kalender: 4 weken, maandag t/m zondag; dagen voor je eerste training en na vandaag blijven leeg */
+  const first=[...act].concat(S.skips.map(x=>x.date)).sort()[0]||today();
+  const d=new Date(mondayOf(today())+'T12:00:00');d.setDate(d.getDate()-21);
+  let dots=['ma','di','wo','do','vr','za','zo'].map(x=>'<span>'+x+'</span>').join('');
+  for(let i=0;i<28;i++){const ds=ymd(d),st=ds>today()||ds<first?'none':dayStatus(ds,act);dots+='<i class="'+st+(ds===today()?' now':'')+'" title="'+esc(nlDate(ds))+'"></i>';d.setDate(d.getDate()+1)}
+  return '<section class="card"><h3>Streak</h3><div class="meta">Trainingsdagen op rij. Rustdagen (vrijdag tot en met zondag) breken je streak niet. Sla je over omdat je ziek bent of geen tijd hebt, dan staat hij even stil.</div>'+
+    '<div class="scard"><div><small>Nu</small><b>'+cur+'<span>'+(cur===1?'dag':'dagen')+'</span></b></div><div><small>Record</small><b>'+best+'<span>'+(best===1?'dag':'dagen')+'</span></b></div></div>'+
+    '<div class="dots" aria-label="Laatste 4 weken">'+dots+'</div>'+
+    '<div class="legend"><span style="--c:var(--acc)">Getraind</span><span style="--c:#5a1d12">Ziek</span><span style="--c:#f59e0b">Geen tijd</span><span style="--c:var(--chip)">Rustdag / vandaag</span><span style="--c:var(--redInk)">Gemist</span></div></section>';
+}
 function render(){
   $('tabT').setAttribute('aria-pressed',view==='today');$('tabH').setAttribute('aria-pressed',view.startsWith('hist'));$('tabW').setAttribute('aria-pressed',view==='weight');$('tabS').setAttribute('aria-pressed',view==='swim');
   $('top').classList.toggle('swimmode',view==='swim');
   if(wRO){wRO.disconnect();wRO=null}
-  view==='today'?renderToday():view==='weight'?renderWeight():view==='swim'?renderSwim():renderHist();renderHead()}
+  view==='today'?renderToday():view==='weight'?renderWeight():view==='swim'?renderSwim():renderHist();renderHead();renderStreak()}
 /* zwemmen */
 const mondayOf=ds=>{const d=new Date(ds+'T12:00:00');const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const fmtM=m=>m.toLocaleString('nl-NL')+' m';
