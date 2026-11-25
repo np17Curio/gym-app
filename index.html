@@ -140,6 +140,12 @@ main{padding:0 max(5vw,16px)}
 .timer button.g{background:transparent;color:#fff;border:1px solid #555}
 .hist .day{display:flex;justify-content:space-between;gap:8px}
 .hist ul{margin:8px 0 0;padding-left:18px;color:var(--mute);font-size:14px}
+.hist:not(.swim) ul{list-style:none;padding:0;display:grid;gap:10px;margin-top:12px}
+.hist li b{display:block;color:var(--ink);font:600 15px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.03em}
+.sl{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.sl span{background:#0a0a0a;border:1px solid var(--line);border-radius:4px;padding:2px 8px;font:500 14px Oswald,sans-serif;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sl span i{font-style:normal;color:var(--acc);margin-right:6px}
+.sl span.wu{border-style:dashed;color:var(--mute)}
 .pick{width:100%;font-size:16px;padding:10px 12px;min-height:46px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);margin-top:10px}
 .bars{display:grid;gap:6px;margin-top:12px}
 .bars div{display:grid;grid-template-columns:62px minmax(0,1fr) 62px;gap:8px;align-items:center;font-size:14px}
@@ -166,6 +172,9 @@ main{padding:0 max(5vw,16px)}
 .bkl textarea{width:100%;font:14px/1.4 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);resize:vertical}
 .empty{color:var(--mute);text-align:center;padding:24px 8px}
 .del{border:0;background:none;color:var(--mute);text-decoration:underline;padding:6px;min-height:44px}
+.dline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.dline small{display:block}
+.dline input{font-size:16px;padding:10px 12px;min-height:46px;border-radius:6px;border:1px solid var(--line);background:#0a0a0a;color:var(--ink);font-family:inherit}
 .skipbox .head{align-items:center}
 .skipbtn{flex:none;border:1px solid #444;background:transparent;color:var(--ink);border-radius:4px;padding:8px 16px;min-height:44px;font:600 15px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.05em}
 .reasons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
@@ -194,7 +203,7 @@ main{padding:0 max(5vw,16px)}
   <div class="prog"><span id="progTxt">0 van 0 sets</span><span id="dur">± 75 min</span></div>
 </div></header>
 <nav class="tabs" aria-label="Weergave">
-  <button id="tabT" aria-pressed="true">Vandaag</button>
+  <button id="tabT" aria-pressed="true">Gym</button>
   <button id="tabS" aria-pressed="false">Zwemmen</button>
   <button id="tabH" aria-pressed="false">Geschiedenis</button>
   <button id="tabW" aria-pressed="false">Mijn gewicht</button>
@@ -298,28 +307,32 @@ function skipCard(kind){
     (skipOpen===kind?'':'<button class="skipbtn" data-skipopen="'+kind+'">Overslaan</button>')+'</div>'+
     (skipOpen===kind?'<div class="meta" style="margin-top:12px">Waarom sla je over?</div><div class="reasons">'+Object.keys(REASONS).map(r=>'<button data-skip="'+r+'" data-kind="'+kind+'">'+REASONS[r]+'</button>').join('')+'</div><button class="del" data-skipcancel="1">Toch niet</button>':'')+'</section>';
 }
+/* bij het openen staat de app op wat er vandaag op je schema staat: maandag en woensdag Zwemmen, anders Gym */
 let view=[1,3].includes(new Date().getDay())?'swim':'today',dbDoc=null,saveT=null,saving=false,again=false;
 
-function newDraft(type,week){
-  const items={};week=week||weekOf(today());
+function newDraft(type,week,date){
+  date=date||today();
+  const items={};week=week||weekOf(date);
   const wu={};
   PLANS[week][type].forEach(e=>{
     if(e.cardio){items[e.id]={done:false};return}
-    const last=lastFor(e.id),weighted=!e.time&&!e.bw;
+    const last=lastFor(e.id,date),weighted=!e.time&&!e.bw;
     /* gewichten van de vorige keer alvast invullen */
     items[e.id]=Array.from({length:e.sets},(_,i)=>{const p=last&&last.raw[i];return {kg:weighted&&p&&p.done&&p.kg?p.kg:'',reps:'',done:false}});
     if(weighted)wu[e.id]={kg:last&&last.wu&&last.wu.kg?last.wu.kg:'',reps:'',done:false};
   });
-  return {date:today(),week,type,items,wu,warm:WARM.map(()=>false),cool:COOL.map(()=>false)};
+  return {date,made:today(),week,type,items,wu,warm:WARM.map(()=>false),cool:COOL.map(()=>false)};
 }
 function autoType(){
   const d=new Date().getDay();
   if(d===2)return 'A';if(d===4)return 'B';
   const last=S.history[S.history.length-1];return last&&last.type==='A'?'B':'A';
 }
-function ensureDraft(){if(!S.draft||!S.draft.week||!S.draft.wu||S.draft.date!==today())S.draft=newDraft(autoType())}
-function lastFor(id){
-  for(let i=S.history.length-1;i>=0;i--){if(S.history[i].date===today())continue;const it=S.history[i].items[id];if(Array.isArray(it)&&it.some(s=>s.done&&num(s.reps)!=null)){const h=S.history[i];return {date:h.date,sets:it.filter(s=>s.done),raw:it,wu:h.wu&&h.wu[id]&&h.wu[id].done?h.wu[id]:null}}}
+function ensureDraft(){if(!S.draft||!S.draft.week||!S.draft.wu||(S.draft.made||S.draft.date)!==today())S.draft=newDraft(autoType())}
+/* vorige keer = de laatste training vóór de datum van de training die je nu invult */
+function lastFor(id,before){
+  before=before||(S.draft&&S.draft.date)||today();
+  for(let i=S.history.length-1;i>=0;i--){if(S.history[i].date>=before)continue;const it=S.history[i].items[id];if(Array.isArray(it)&&it.some(s=>s.done&&num(s.reps)!=null)){const h=S.history[i];return {date:h.date,sets:it.filter(s=>s.done),raw:it,wu:h.wu&&h.wu[id]&&h.wu[id].done?h.wu[id]:null}}}
   return null;
 }
 function advice(e,last){
@@ -414,8 +427,9 @@ function checklist(key,arr,title){
 }
 function renderToday(){
   const D=S.draft;
-  if(skipOf('gym')){$('main').innerHTML=skipCard('gym');renderHead();return}
-  let h=skipCard('gym')+checklist('warm',WARM,'Warming-up · 5 min');
+  const isToday=D.date===today();
+  if(isToday&&skipOf('gym')){$('main').innerHTML=skipCard('gym');renderHead();return}
+  let h='<section class="card"><label class="dline"><span><h3>Datum</h3><small class="meta">'+(isToday?'Vandaag. Heb je op een andere dag getraind? Kies die datum.':'Je vult een training in voor een andere dag.')+'</small></span><input id="gDate" type="date" value="'+esc(D.date)+'" max="'+today()+'"></label>'+(isToday?'':'<button class="del" id="gToday">Terug naar vandaag</button>')+'</section>'+(isToday?skipCard('gym'):'')+checklist('warm',WARM,'Warming-up · 5 min');
   h+=planOf(D).map(e=>{
     const it=D.items[e.id];
     if(e.cardio)return '<section class="card'+(it.done?' done':'')+'"><div class="head"><div><h3>'+esc(e.n)+'</h3><div class="meta">'+esc(e.cardio)+'</div></div></div>'+'<div class="mus">'+musclesOf(e).split(', ').map(m=>'<span>'+esc(m)+'</span>').join('')+'</div>'+
@@ -474,7 +488,11 @@ function renderHist(){
     if(x.w!=null)return swimHist(S.swims[x.w]);
     const idx=x.h,hh=S.history[idx];
     const lines=(hh.week?planOf(hh):ALL).filter(e=>!e.cardio).map(e=>{const it=(hh.items[e.id]||[]).filter(s=>s.done);if(!it.length)return '';
-      const k=it.map(s=>num(s.kg)).filter(x=>x!=null);return '<li>'+esc(e.n)+': '+(k.length?esc(fmt(Math.max(...k)))+' kg · ':'')+esc(it.map(s=>s.reps||'–').join(' '))+'</li>'}).join('');
+      /* per set: kilo × herhalingen (of seconden / eigen gewicht), opwarmset apart met W */
+      const unit=e.time?' sec':'';
+      const one=(s,lab,cls)=>{const kg=num(s.kg);return '<span class="'+cls+'"><i>'+lab+'</i>'+(kg!=null?esc(fmt(kg))+' kg × ':'')+esc(s.reps||'–')+unit+'</span>'};
+      const w=hh.wu&&hh.wu[e.id]&&hh.wu[e.id].done?one(hh.wu[e.id],'W','wu'):'';
+      return '<li><b>'+esc(e.n)+'</b><div class="sl">'+w+(hh.items[e.id]||[]).map((s,i)=>s.done?one(s,i+1,''):'').join('')+'</div></li>'}).join('');
     return '<section class="card hist"><div class="day"><h3>'+(hh.week?'Blok '+esc(hh.week)+' · ':'')+'Training '+esc(hh.type)+'</h3><span class="badge">'+esc(nlDate(hh.date))+'</span></div><ul>'+(lines||'<li>Geen sets afgevinkt</li>')+'</ul><button class="del" data-del="'+idx+'">Verwijder</button></section>';
   }).join('');
   $('main').innerHTML=h+backupCard();
@@ -526,7 +544,7 @@ function render(){
   $('tabT').setAttribute('aria-pressed',view==='today');$('tabH').setAttribute('aria-pressed',view.startsWith('hist'));$('tabW').setAttribute('aria-pressed',view==='weight');$('tabS').setAttribute('aria-pressed',view==='swim');
   $('top').classList.toggle('swimmode',view==='swim');
   if(wRO){wRO.disconnect();wRO=null}
-  view==='today'?renderToday():view==='weight'?renderWeight():view==='swim'?renderSwim():renderHist();renderHead();renderStreak()}
+  view==='today'?renderToday():view==='weight'?renderWeight():view==='swim'?renderSwim():renderHist();renderHead();renderStreak();}
 /* zwemmen */
 const mondayOf=ds=>{const d=new Date(ds+'T12:00:00');const k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const fmtM=m=>m.toLocaleString('nl-NL')+' m';
@@ -648,9 +666,22 @@ $('main').addEventListener('input',ev=>{
   const tgt=t.dataset.s==='w'?S.draft.wu[t.dataset.ex]:S.draft.items[t.dataset.ex][+t.dataset.s];
   tgt[t.dataset.f]=t.value.trim();justFinished=false;save();
 });
-$('main').addEventListener('change',ev=>{if(ev.target.id==='pick'){view='hist:'+ev.target.value;render()}});
+$('main').addEventListener('change',ev=>{if(ev.target.id==='pick'){view='hist:'+ev.target.value;render()}
+  if(ev.target.id==='gDate')setGymDate(ev.target.value)});
+/* datum van de gymtraining wijzigen; afgevinkte sets blijven staan, lege kilo's worden opnieuw ingevuld vanuit de training daarvoor */
+function setGymDate(v){
+  if(!v||v>today()){render();setStatus('Een datum in de toekomst kan niet.');return}
+  const D=S.draft;if(v===D.date)return;
+  const {d}=counts(),saved=S.history.some(h=>h.date===D.date&&h.type===D.type);
+  const old=S.history.find(h=>h.date===v&&h.week);
+  if(old){S.draft=Object.assign(JSON.parse(JSON.stringify(old)),{made:today()});if(!S.draft.wu)S.draft.wu={}}  /* die dag al opgeslagen: openen om aan te passen */
+  else if(d&&!saved){D.date=v}  /* nog niet opgeslagen sets verhuizen mee */
+  else{S.draft=newDraft(D.type,D.week,v)}
+  save();render();setStatus('Datum gezet op '+nlDate(v)+'.');
+}
 $('main').addEventListener('click',ev=>{
   const b=ev.target.closest('button');if(!b)return;
+  if(b.id==='gToday'){setGymDate(today());return}
   if(b.dataset.skipopen){skipOpen=b.dataset.skipopen;render();return}
   if(b.dataset.skipcancel){skipOpen=null;render();return}
   if(b.dataset.skip){
@@ -726,7 +757,7 @@ $('main').addEventListener('click',ev=>{
 $('segA').onclick=()=>switchTo('A',S.draft.week);$('segB').onclick=()=>switchTo('B',S.draft.week);
 function switchTo(t,w){if(S.draft.type===t&&S.draft.week===w)return;const {d}=counts();
   if(d&&!confirmSwitch){confirmSwitch=true;view='today';render();setStatus('Je hebt al sets afgevinkt. Tik nog een keer om te wisselen.');return}
-  confirmSwitch=false;S.draft=newDraft(t,w);view='today';save();render()}
+  confirmSwitch=false;S.draft=newDraft(t,w,S.draft.date);view='today';save();render()}
 [1,2,3].forEach(w=>$('w'+w).onclick=()=>switchTo(S.draft.type,w));
 let confirmSwitch=false;
 $('tabT').onclick=()=>{view='today';render()};
