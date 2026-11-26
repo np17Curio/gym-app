@@ -175,6 +175,24 @@ main{padding:0 max(5vw,16px)}
 .dline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .dline small{display:block}
 .dline input{font-size:16px;padding:10px 12px;min-height:46px;border-radius:6px;border:1px solid var(--line);background:#0a0a0a;color:var(--ink);font-family:inherit}
+.dhero{position:relative;overflow:hidden;border:1px solid #333;border-left:4px solid var(--acc);padding-top:26px}
+.dhero::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:var(--hazard)}
+.dhero h2{font-size:clamp(34px,9vw,48px);color:var(--acc);margin-top:6px}
+.dtag{font:600 12px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.12em;color:var(--mute)}
+.dstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.dstats div{background:#0a0a0a;border:1px solid var(--line);border-radius:6px;padding:10px}
+.dstats small{display:block;color:var(--mute);font:600 12px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.06em}
+.dstats b{font:400 clamp(22px,6.5vw,32px) Anton,sans-serif;white-space:nowrap;line-height:1.15}
+.dstats b span{font:600 13px Oswald,sans-serif;color:var(--mute);margin-left:3px}
+.fun{margin:12px 0 0;font-size:15px}.fun b{color:var(--acc)}
+.dhero h3.sub{font-size:16px;margin-top:16px}
+.dstreak{display:flex;align-items:center;gap:8px;margin:14px 0 0;font:600 15px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em}
+.dstreak svg{width:24px;height:24px;color:var(--acc)}.dstreak b{font:400 22px Anton,sans-serif;color:var(--acc)}
+.celdur{font:600 16px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.04em;margin:0 0 6px!important}.celdur b{color:var(--acc)}
+.confetti{position:absolute;inset:0;pointer-events:none}
+.confetti i{position:absolute;top:-12px;width:8px;height:14px;border-radius:2px;animation:fall 2.4s ease-in forwards;opacity:0}
+@keyframes fall{0%{opacity:1;top:-12px}100%{opacity:0;top:100%;margin-left:30px}}
+@media(prefers-reduced-motion:reduce){.confetti{display:none}}
 .skipbox .head{align-items:center}
 .skipbtn{flex:none;border:1px solid #444;background:transparent;color:var(--ink);border-radius:4px;padding:8px 16px;min-height:44px;font:600 15px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.05em}
 .reasons{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
@@ -398,6 +416,7 @@ function celebrate(r){
   }else{
     h='<h2>Training opgeslagen</h2><p>Geen zwaardere gewichten deze keer, en dat is prima. Kijk bij de volgende keer naar de tips bij elke oefening.</p>';
   }
+  if(S.draft.dur)h='<p class="celdur">Je trainde <b>'+esc(fmtMin(S.draft.dur))+'</b></p>'+h;
   const st=streakInfo().cur;
   if(st>1)h+='<p><b>'+st+' trainingsdagen op rij'+(st>=streakInfo().best?', je record!':'!')+'</b></p>';
   $('celBody').innerHTML=h;$('cel').hidden=false;$('celOk').focus();
@@ -433,8 +452,14 @@ function renderHead(){
   $('segA').setAttribute('aria-pressed',D.type==='A');$('segB').setAttribute('aria-pressed',D.type==='B');
   $('barFill').style.width=(t?d/t*100:0)+'%';
   $('progTxt').textContent=d+' van '+t+' sets klaar';
-  $('dur').textContent='± '+duration(D)+' min';
+  $('dur').textContent=D.dur&&isSaved(D)?'Klaar in '+fmtMin(D.dur):D.start&&D.date===today()?fmtMin(Math.max(0,Math.round((Date.now()-D.start)/60000)))+' bezig':'± '+duration(D)+' min';
 }
+/* trainingsduur: start bij de eerste afgevinkte set of warming-up, stopt bij Training opslaan */
+const fmtMin=m=>m<60?m+' min':Math.floor(m/60)+' uur'+(m%60?' '+(m%60)+' min':'');
+function markStart(){const D=S.draft;if(!D.start&&D.date===today())D.start=Date.now()}
+const isSaved=D=>S.history.some(h=>h.date===D.date&&h.type===D.type);
+let editing=false,confetti=false;
+setInterval(()=>{if(view==='today'&&S.draft&&S.draft.start&&!isSaved(S.draft))renderHead()},20000);
 function checklist(key,arr,title){
   return '<section class="card"><div class="head"><h3>'+title+'</h3></div><ul class="list">'+arr.map((x,i)=>
    '<li><button class="chk" data-list="'+key+'" data-i="'+i+'" aria-pressed="'+S.draft[key][i]+'" aria-label="'+esc(x)+' afvinken">'+CHECK+'</button><span>'+esc(x)+'</span></li>').join('')+'</ul></section>';
@@ -442,6 +467,7 @@ function checklist(key,arr,title){
 function renderToday(){
   const D=S.draft;
   const isToday=D.date===today();
+  if(isSaved(D)&&!editing){$('main').innerHTML=renderDone(D);renderHead();return}
   if(isToday&&skipOf('gym')){$('main').innerHTML=skipCard('gym');renderHead();return}
   let h='<section class="card"><label class="dline"><span><h3>Datum</h3><small class="meta">'+(isToday?'Vandaag. Heb je op een andere dag getraind? Kies die datum.':'Je vult een training in voor een andere dag.')+'</small></span><input id="gDate" type="date" value="'+esc(D.date)+'" max="'+today()+'"></label>'+(isToday?'':'<button class="del" id="gToday">Terug naar vandaag</button>')+'</section>'+(isToday?skipCard('gym'):'')+checklist('warm',WARM,'Warming-up · 5 min');
   h+=planOf(D).map(e=>{
@@ -465,6 +491,42 @@ function renderToday(){
   h+=checklist('cool',COOL,'Cooling-down · 3 min');
   h+='<button class="finish" id="finish">Training opslaan</button><p class="note" id="status"></p>';
   $('main').innerHTML=h;renderHead();setStatus();
+}
+/* klaar-scherm: na Training opslaan zie je dit in plaats van de training */
+const HEADLINES=['Training gesloopt!','Beest-modus: aan','Weer sterker dan vorige week','Zo, die zit erin','Spieren: geactiveerd','IJzer verplaatst, check'];
+const SUBLINES=['Je bent er gewoon weer geweest. Daar draait het om.','Elke training is een steen in de muur.','Je toekomstige ik bedankt je.','Dit is hoe sterk worden eruitziet.'];
+const TIPS=['Drink de komende uren extra water.','Eiwitten binnen een paar uur helpen je spieren herstellen.','Goed slapen is waar je spieren echt groeien.','Even rekken vanavond voorkomt stijve spieren morgen.','Een rustdag is ook training: daar word je sterker van.'];
+const HEAVY=[{n:'olifant',m:'olifanten',kg:6000},{n:'auto',m:"auto's",kg:1200},{n:'piano',m:"piano's",kg:250},{n:'wasmachine',m:'wasmachines',kg:70}];
+const pickBy=(arr,seed)=>arr[[...seed].reduce((t,c)=>t+c.charCodeAt(0),0)%arr.length];
+function volume(D){
+  let v=0;planOf(D).forEach(e=>{if(e.cardio||e.time||e.bw)return;const x=/per dumbbell/.test(e.note||'')?2:1;
+    (D.items[e.id]||[]).forEach(s=>{if(s.done){const k=num(s.kg),r=num(s.reps);if(k&&r)v+=k*r*x}})});
+  return Math.round(v);
+}
+function nextUp(){
+  const d=new Date(today()+'T12:00:00');
+  for(let i=1;i<=7;i++){d.setDate(d.getDate()+1);const w=d.getDay(),ds=ymd(d);
+    if(w===1||w===3)return {what:'Zwemmen',when:nlDate(ds),i};
+    if(w===2||w===4)return {what:'Gym · training '+(w===2?'A':'B'),when:nlDate(ds),i}}
+}
+function renderDone(D){
+  const {t,d}=counts(),vol=volume(D),r=progress(D),st=streakInfo(),seed=D.date+D.type;
+  const cmp=HEAVY.find(x=>vol/x.kg>=1);const cnt=cmp?vol/cmp.kg:0;
+  let conf='';
+  if(confetti){confetti=false;const cols=['var(--acc)','var(--swim)','var(--redInk)','#fff'];
+    for(let i=0;i<26;i++)conf+='<i style="left:'+(Math.random()*100)+'%;background:'+cols[i%4]+';animation-delay:'+(Math.random()*.6).toFixed(2)+'s;transform:rotate('+(Math.random()*180|0)+'deg)"></i>'}
+  const nx=nextUp();
+  return '<section class="card dhero">'+(conf?'<div class="confetti" aria-hidden="true">'+conf+'</div>':'')+
+    '<div class="dtag">Blok '+esc(D.week)+' · Training '+esc(D.type)+' · '+esc(nlDate(D.date))+'</div>'+
+    '<h2>'+esc(pickBy(HEADLINES,seed))+'</h2><p class="meta">'+esc(pickBy(SUBLINES,seed))+'</p>'+
+    '<div class="dstats"><div><small>Tijd</small><b>'+(D.dur?esc(fmtMin(D.dur)):'–')+'</b></div><div><small>Sets</small><b>'+d+'<span>/'+t+'</span></b></div><div><small>Verplaatst</small><b>'+(vol?esc(vol.toLocaleString('nl-NL')):'–')+'<span>kg</span></b></div></div>'+
+    (cmp?'<p class="fun">Dat is net zo zwaar als <b>'+esc(fmt(cnt))+' '+esc(Math.round(cnt*10)===10?cmp.n:cmp.m)+'</b>.</p>':'')+
+    (r.up.length?'<h3 class="sub">Beter dan vorige keer</h3><ul class="wins">'+r.up.map(u=>'<li><b>'+esc(u.n)+'</b><span>'+esc(u.t)+'</span><em>'+esc(u.d)+'</em></li>').join('')+'</ul>':'')+
+    (st.cur?'<p class="dstreak">'+FLAME+'<span><b>'+st.cur+'</b> '+(st.cur===1?'trainingsdag':'trainingsdagen')+' op rij'+(st.cur>=st.best&&st.cur>1?' · record!':'')+'</span></p>':'')+
+    '</section>'+
+    (nx?'<section class="card"><div class="head"><div><h3>Volgende</h3><div class="meta">'+esc(nx.what)+' · '+esc(nx.when)+'</div></div><span class="badge">'+(nx.i===1?'morgen':'over '+nx.i+' dagen')+'</span></div></section>':'')+
+    '<section class="card"><h3>Hersteltip</h3><p class="meta">'+esc(pickBy(TIPS,seed))+'</p></section>'+
+    '<button class="finish alt" id="editDone">Training bekijken of aanpassen</button><p class="note" id="status"></p>';
 }
 function backupCard(){
   return '<section class="card" id="backup"><h3>Backup</h3><div class="meta">Al je trainingen, zwemtrainingen en je gewicht in één stuk tekst. Bewaar die bijvoorbeeld in Notities, of gebruik hem om je gegevens naar een andere versie van de app over te zetten.</div>'+
@@ -508,7 +570,7 @@ function renderHist(){
       const one=(s,lab,cls)=>{const kg=num(s.kg);return '<span class="'+cls+'"><i>'+lab+'</i>'+(kg!=null?esc(fmt(kg))+' kg × ':'')+esc(s.reps||'–')+unit+'</span>'};
       const w=hh.wu&&hh.wu[e.id]&&hh.wu[e.id].done?one(hh.wu[e.id],'W','wu'):'';
       return '<li><b>'+esc(e.n)+'</b><div class="sl">'+w+(hh.items[e.id]||[]).map((s,i)=>s.done?one(s,i+1,''):'').join('')+'</div></li>'}).join('');
-    return '<section class="card hist"><div class="day"><h3>'+(hh.week?'Blok '+esc(hh.week)+' · ':'')+'Training '+esc(hh.type)+'</h3><span class="badge">'+esc(nlDate(hh.date))+'</span></div><ul>'+(lines||'<li>Geen sets afgevinkt</li>')+'</ul><button class="del" data-del="'+idx+'">Verwijder</button></section>';
+    return '<section class="card hist"><div class="day"><h3>'+(hh.week?'Blok '+esc(hh.week)+' · ':'')+'Training '+esc(hh.type)+'</h3><span class="badge">'+esc(nlDate(hh.date))+'</span></div>'+(hh.dur?'<div class="meta">Duur: '+esc(fmtMin(hh.dur))+'</div>':'')+'<ul>'+(lines||'<li>Geen sets afgevinkt</li>')+'</ul><button class="del" data-del="'+idx+'">Verwijder</button></section>';
   }).join('');
   $('main').innerHTML=h+backupCard();
 }
@@ -687,7 +749,7 @@ $('main').addEventListener('change',ev=>{if(ev.target.id==='pick'){view='hist:'+
 /* datum van de gymtraining wijzigen; afgevinkte sets blijven staan, lege kilo's worden opnieuw ingevuld vanuit de training daarvoor */
 function setGymDate(v){
   if(!v||v>today()){render();setStatus('Een datum in de toekomst kan niet.');return}
-  const D=S.draft;if(v===D.date)return;
+  const D=S.draft;if(v===D.date)return;editing=false;
   const {d}=counts(),saved=S.history.some(h=>h.date===D.date&&h.type===D.type);
   const old=S.history.find(h=>h.date===v&&h.week);
   if(old){S.draft=Object.assign(JSON.parse(JSON.stringify(old)),{made:today()});if(!S.draft.wu)S.draft.wu={}}  /* die dag al opgeslagen: openen om aan te passen */
@@ -712,8 +774,10 @@ $('main').addEventListener('click',ev=>{
     else{b.dataset.sure='1';b.textContent='Zeker? Tik nog een keer'}
     return;
   }
-  if(b.dataset.list){const a=S.draft[b.dataset.list];a[+b.dataset.i]=!a[+b.dataset.i];save();render();return}
+  if(b.id==='editDone'){editing=true;render();scrollTo(0,0);return}
+  if(b.dataset.list){markStart();const a=S.draft[b.dataset.list];a[+b.dataset.i]=!a[+b.dataset.i];save();render();return}
   if(b.dataset.ex){
+    markStart();
     const e=planOf(S.draft).find(x=>x.id===b.dataset.ex),it=S.draft.items[e.id],i=+b.dataset.s;
     if(b.dataset.s==='w'){const w=S.draft.wu[e.id];w.done=!w.done;if(w.done){if(!w.reps)w.reps='10';startTimer(60)}save();render();return}
     if(i<0){it.done=!it.done}else{
@@ -730,11 +794,13 @@ $('main').addEventListener('click',ev=>{
     const {d}=counts();
     if(!d){setStatus('Vink eerst minstens één set af.');return}
     const i=S.history.findIndex(h=>h.date===S.draft.date&&h.type===S.draft.type);
-    const copy=JSON.parse(JSON.stringify(S.draft));
-    const rep=progress(S.draft);
+    const D=S.draft;
+    if(!D.dur&&D.start&&D.date===today()){const m=Math.round((Date.now()-D.start)/60000);if(m<=300)D.dur=Math.max(1,m)}
+    const copy=JSON.parse(JSON.stringify(D));
+    const rep=progress(D);
     if(i>=0)S.history[i]=copy;else S.history.push(copy);
     S.history.sort((a,b)=>a.date<b.date?-1:1);
-    justFinished=true;save();celebrate(rep);return;
+    justFinished=true;editing=false;confetti=true;stopTimer();save();render();scrollTo(0,0);celebrate(rep);return;
   }
   if(b.id==='bkCopy'){
     const txt=backupJSON(),msg=$('bkMsg'),ta=$('bkText');
@@ -776,10 +842,10 @@ function switchTo(t,w){if(S.draft.type===t&&S.draft.week===w)return;const {d}=co
   confirmSwitch=false;S.draft=newDraft(t,w,S.draft.date);view='today';save();render()}
 [1,2,3].forEach(w=>$('w'+w).onclick=()=>switchTo(S.draft.type,w));
 let confirmSwitch=false;
-$('tabT').onclick=()=>{view='today';render()};
-$('tabH').onclick=()=>{view='hist';render()};
-$('tabW').onclick=()=>{view='weight';render()};
-$('tabS').onclick=()=>{view='swim';render()};
+$('tabT').onclick=()=>{view='today';editing=false;render()};
+$('tabH').onclick=()=>{view='hist';editing=false;render()};
+$('tabW').onclick=()=>{view='weight';editing=false;render()};
+$('tabS').onclick=()=>{view='swim';editing=false;render()};
 $('main').addEventListener('input',ev=>{if(ev.target.closest&&ev.target.closest('#sForm'))swimLive()});
 $('main').addEventListener('change',ev=>{if(ev.target.id==='sLen')swimLive()});
 $('main').addEventListener('submit',ev=>{
