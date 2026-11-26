@@ -62,5 +62,5 @@ Alles wordt opgeslagen op het apparaat zelf (localStorage), niet in deze map.
 Maak af en toe een backup via **Geschiedenis → Backup**. In de backup zitten je gymtrainingen, zwemtrainingen, overgeslagen dagen en gewicht.
 
 ## Updaten
-Pas je `index.html` aan? Verhoog dan ook `VERSION` in `sw.js` (bijvoorbeeld van `gym-v3` naar `gym-v4`).
+Pas je `index.html` aan? Verhoog dan ook `VERSION` in `sw.js` (bijvoorbeeld van `gym-v4` naar `gym-v5`).
 Anders kan de iPhone de oude versie blijven tonen.

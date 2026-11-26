@@ -226,13 +226,14 @@ const PLANS={
  {id:'row',n:'Barbell row',sets:3,min:8,max:10,rest:90,inc:2.5},
  {id:'rdl',n:'Roemeense deadlift',sets:3,min:8,max:10,rest:90,inc:2.5},
  {id:'ohp',n:'Dumbbell shoulder press',sets:3,min:10,max:10,rest:90,inc:1,note:'kg per dumbbell'},
+ {id:'skull',n:'Skull crushers (EZ-stang)',sets:3,min:10,max:12,rest:60,inc:2.5,note:'ellebogen stil, stang zakt naar je voorhoofd'},
  {id:'plank',n:'Plank',sets:3,min:30,max:45,rest:45,time:true},
  {id:'cardio1A',n:'Conditie: intervallen',cardio:'Roeier of fiets: 30 sec hard, 60 sec rustig, 5 rondes'}],
  B:[
  {id:'trap',n:'Trap bar deadlift',sets:3,min:5,max:5,rest:120,inc:2.5},
  {id:'lat',n:'Lat pulldown',sets:3,min:8,max:10,rest:90,inc:2.5},
  {id:'incl',n:'Incline dumbbell press',sets:3,min:8,max:10,rest:90,inc:1,note:'kg per dumbbell'},
- {id:'bss',n:'Bulgarian split squat',sets:3,min:8,max:8,rest:60,inc:1,note:'lunge met achterste voet op een bankje · per been, kg per dumbbell'},
+ {id:'legext',n:'Leg extension',sets:3,min:10,max:12,rest:60,inc:2.5,note:'rustig laten zakken, 1 tel vasthouden bovenin'},
  {id:'face',n:'Face pulls',sets:2,min:12,max:15,rest:60,inc:1},
  {id:'curl',n:'Biceps curl',sets:3,min:12,max:12,rest:0,inc:1,note:'superset: meteen door naar pushdown'},
  {id:'push',n:'Triceps pushdown',sets:3,min:12,max:12,rest:60,inc:1,note:'daarna 60 sec rust'},
@@ -244,6 +245,7 @@ const PLANS={
  {id:'cablerow',n:'Seated cable row',sets:3,min:10,max:12,rest:90,inc:2.5},
  {id:'hipthrust',n:'Hip thrust',sets:3,min:8,max:10,rest:90,inc:5},
  {id:'arnold',n:'Arnold press',sets:3,min:10,max:10,rest:90,inc:1,note:'kg per dumbbell'},
+ {id:'skull',n:'Skull crushers (EZ-stang)',sets:3,min:10,max:12,rest:60,inc:2.5,note:'ellebogen stil, stang zakt naar je voorhoofd'},
  {id:'sideplank',n:'Zijplank',sets:2,min:30,max:30,rest:30,time:true,note:'per kant'},
  {id:'cardio2A',n:'Conditie: crosstrainer',cardio:'1 min hard, 1 min rustig, 4 rondes'}],
  B:[
@@ -274,7 +276,7 @@ const PLANS={
  {id:'skull',n:'Skull crushers (EZ-stang)',sets:3,min:10,max:12,rest:60,inc:2.5,note:'daarna 60 sec rust'},
  {id:'pallof',n:'Pallof press',sets:2,min:10,max:10,rest:45,inc:2.5,note:'per kant'},
  {id:'cardio3B',n:'Conditie',cardio:'8 min stevig crosstrainer'}]}};
-const MUSCLES={"legpress": "Bovenbenen (voorkant), billen", "bench": "Borst, triceps, voorkant schouders", "row": "Rug, biceps", "rdl": "Hamstrings, billen, onderrug", "ohp": "Schouders, triceps", "plank": "Buikspieren, core", "trap": "Bovenbenen, billen, hamstrings, rug", "lat": "Brede rugspier, biceps", "incl": "Bovenkant borst, schouders, triceps", "bss": "Bovenbenen, billen", "face": "Achterkant schouders, bovenrug", "curl": "Biceps", "push": "Triceps", "knee": "Onderbuik, heupbuigers", "lunge": "Bovenbenen, billen", "dbbench": "Borst, triceps, voorkant schouders", "cablerow": "Rug, biceps", "hipthrust": "Billen, hamstrings", "arnold": "Schouders", "sideplank": "Schuine buikspieren", "deadlift": "Hamstrings, billen, onderrug, rug", "pullup": "Brede rugspier, biceps", "inclbar": "Bovenkant borst, schouders, triceps", "revlunge": "Bovenbenen, billen", "revfly": "Achterkant schouders, bovenrug", "hammer": "Biceps, onderarmen", "ohtri": "Triceps", "cablecrunch": "Buikspieren", "stepup": "Bovenbenen, billen", "chestpress": "Borst, triceps", "dbrow": "Rug, biceps", "kbswing": "Billen, hamstrings, conditie", "mshoulder": "Schouders, triceps", "deadbug": "Buikspieren, core", "sldl": "Hamstrings, billen, balans", "chinlat": "Brede rugspier, biceps", "dips": "Triceps, borst", "legcurl": "Hamstrings", "latraise": "Zijkant schouders", "inclcurl": "Biceps", "skull": "Triceps", "pallof": "Core, schuine buikspieren"};
+const MUSCLES={"legext": "Bovenbenen (voorkant)", "legpress": "Bovenbenen (voorkant), billen", "bench": "Borst, triceps, voorkant schouders", "row": "Rug, biceps", "rdl": "Hamstrings, billen, onderrug", "ohp": "Schouders, triceps", "plank": "Buikspieren, core", "trap": "Bovenbenen, billen, hamstrings, rug", "lat": "Brede rugspier, biceps", "incl": "Bovenkant borst, schouders, triceps", "bss": "Bovenbenen, billen", "face": "Achterkant schouders, bovenrug", "curl": "Biceps", "push": "Triceps", "knee": "Onderbuik, heupbuigers", "lunge": "Bovenbenen, billen", "dbbench": "Borst, triceps, voorkant schouders", "cablerow": "Rug, biceps", "hipthrust": "Billen, hamstrings", "arnold": "Schouders", "sideplank": "Schuine buikspieren", "deadlift": "Hamstrings, billen, onderrug, rug", "pullup": "Brede rugspier, biceps", "inclbar": "Bovenkant borst, schouders, triceps", "revlunge": "Bovenbenen, billen", "revfly": "Achterkant schouders, bovenrug", "hammer": "Biceps, onderarmen", "ohtri": "Triceps", "cablecrunch": "Buikspieren", "stepup": "Bovenbenen, billen", "chestpress": "Borst, triceps", "dbrow": "Rug, biceps", "kbswing": "Billen, hamstrings, conditie", "mshoulder": "Schouders, triceps", "deadbug": "Buikspieren, core", "sldl": "Hamstrings, billen, balans", "chinlat": "Brede rugspier, biceps", "dips": "Triceps, borst", "legcurl": "Hamstrings", "latraise": "Zijkant schouders", "inclcurl": "Biceps", "skull": "Triceps", "pallof": "Core, schuine buikspieren"};
 const musclesOf=e=>e.cardio?'Hart en longen (conditie)':(MUSCLES[e.id]||'');
 const ANCHOR=Date.UTC(2026,10,23); /* maandag 23 nov 2026 = blok 1, week 1 */
 const weeksSince=s=>{const [y,m,d]=s.split('-').map(Number);return Math.floor((Date.UTC(y,m-1,d)-ANCHOR)/864e5/7)};
@@ -282,7 +284,19 @@ const mod3=n=>((n%3)+3)%3;
 const weekOf=s=>mod3(Math.floor(weeksSince(s)/3))+1;   /* welk blok */
 const weekInBlock=s=>mod3(weeksSince(s))+1;            /* week 1, 2 of 3 binnen het blok */
 const planOf=x=>PLANS[x.week||1][x.type];
-const ALL=(()=>{const m={};Object.values(PLANS).forEach(w=>[...w.A,...w.B].forEach(e=>m[e.id]=e));return Object.values(m)})();
+/* oefeningen die uit het schema zijn gehaald: alleen nog nodig om oude trainingen in de geschiedenis te tonen */
+const RETIRED=[{id:'bss',n:'Bulgarian split squat',sets:3,min:8,max:8,inc:1}];
+const ALL=(()=>{const m={};RETIRED.forEach(e=>m[e.id]=e);Object.values(PLANS).forEach(w=>[...w.A,...w.B].forEach(e=>m[e.id]=e));return Object.values(m)})();
+/* een lopende training die nog met het oude schema is gemaakt: ontbrekende oefeningen aanvullen */
+function syncDraft(){
+  const D=S.draft;if(!D||!D.items)return;D.wu=D.wu||{};
+  planOf(D).forEach(e=>{if(D.items[e.id])return;
+    if(e.cardio){D.items[e.id]={done:false};return}
+    const last=lastFor(e.id,D.date),weighted=!e.time&&!e.bw;
+    D.items[e.id]=Array.from({length:e.sets},(_,i)=>{const p=last&&last.raw[i];return {kg:weighted&&p&&p.done&&p.kg?p.kg:'',reps:'',done:false}});
+    if(weighted&&!D.wu[e.id])D.wu[e.id]={kg:last&&last.wu&&last.wu.kg?last.wu.kg:'',reps:'',done:false};
+  });
+}
 const WARM=['4 min roeien of fietsen','Armen en heupen losdraaien (1 min)'];
 const COOL=['Benen, borst en schouders rekken (3 min)'];
 
@@ -400,7 +414,7 @@ function duration(D){
   return Math.round(t);
 }
 function counts(){
-  let t=0,d=0;const D=S.draft;
+  syncDraft();let t=0,d=0;const D=S.draft;
   planOf(D).forEach(e=>{const it=D.items[e.id];if(e.cardio){t++;if(it.done)d++}else it.forEach(s=>{t++;if(s.done)d++})});
   return {t,d};
 }
@@ -487,7 +501,8 @@ function renderHist(){
     if(x.s!=null)return skipHist(S.skips[x.s],x.s);
     if(x.w!=null)return swimHist(S.swims[x.w]);
     const idx=x.h,hh=S.history[idx];
-    const lines=(hh.week?planOf(hh):ALL).filter(e=>!e.cardio).map(e=>{const it=(hh.items[e.id]||[]).filter(s=>s.done);if(!it.length)return '';
+    const plan=hh.week?planOf(hh):[];
+    const lines=plan.concat(ALL.filter(e=>!plan.some(p=>p.id===e.id)&&hh.items[e.id])).filter(e=>!e.cardio).map(e=>{const it=(hh.items[e.id]||[]).filter(s=>s.done);if(!it.length)return '';
       /* per set: kilo × herhalingen (of seconden / eigen gewicht), opwarmset apart met W */
       const unit=e.time?' sec':'';
       const one=(s,lab,cls)=>{const kg=num(s.kg);return '<span class="'+cls+'"><i>'+lab+'</i>'+(kg!=null?esc(fmt(kg))+' kg × ':'')+esc(s.reps||'–')+unit+'</span>'};
@@ -541,6 +556,7 @@ function streakCard(){
     '<div class="legend"><span style="--c:var(--acc)">Getraind</span><span style="--c:#5a1d12">Ziek</span><span style="--c:#f59e0b">Geen tijd</span><span style="--c:var(--chip)">Rustdag / vandaag</span><span style="--c:var(--redInk)">Gemist</span></div></section>';
 }
 function render(){
+  syncDraft();
   $('tabT').setAttribute('aria-pressed',view==='today');$('tabH').setAttribute('aria-pressed',view.startsWith('hist'));$('tabW').setAttribute('aria-pressed',view==='weight');$('tabS').setAttribute('aria-pressed',view==='swim');
   $('top').classList.toggle('swimmode',view==='swim');
   if(wRO){wRO.disconnect();wRO=null}
