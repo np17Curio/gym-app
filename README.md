@@ -5,9 +5,10 @@ Werkt offline en kan via Safari → Deel → "Zet op beginscherm" als app op de 
 
 ## Schema
 - **Maandag en woensdag:** zwemmen
-- **Dinsdag:** gym, training A
-- **Donderdag:** gym, training B
+- **Dinsdag en donderdag:** gym
 - **Vrijdag tot en met zondag:** rustdagen
+
+Er zijn twee gymtrainingen, **Training A** en **Training B**, en die wisselen elkaar af, op welke dag je ook gaat: na A komt B, na B komt A. Ga je een keer op vrijdag, dan krijg je gewoon de volgende in de rij.
 
 Bij het openen staat de app op het onderdeel van vandaag: op maandag en woensdag op **Zwemmen**, op de andere dagen op **Gym**.
 
@@ -64,5 +65,5 @@ Alles wordt opgeslagen op het apparaat zelf (localStorage), niet in deze map.
 Maak af en toe een backup via **Geschiedenis → Backup**. In de backup zitten je gymtrainingen, zwemtrainingen, overgeslagen dagen en gewicht.
 
 ## Updaten
-Pas je `index.html` aan? Verhoog dan ook `VERSION` in `sw.js` (bijvoorbeeld van `gym-v5` naar `gym-v6`).
+Pas je `index.html` aan? Verhoog dan ook `VERSION` in `sw.js` (bijvoorbeeld van `gym-v6` naar `gym-v7`).
 Anders kan de iPhone de oude versie blijven tonen.

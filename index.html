@@ -213,8 +213,8 @@ main{padding:0 max(5vw,16px)}
   <h1 id="title">Training</h1>
   <p class="swimhead" id="swimHead"></p>
   <div class="seg" role="group" aria-label="Kies training">
-    <button id="segA" aria-pressed="true">A · dinsdag</button>
-    <button id="segB" aria-pressed="false">B · donderdag</button>
+    <button id="segA" aria-pressed="true">Training A</button>
+    <button id="segB" aria-pressed="false">Training B</button>
   </div>
   <div class="weeks" role="group" aria-label="Kies blok"><span id="blokInfo"></span><button id="w1">Blok 1</button><button id="w2">Blok 2</button><button id="w3">Blok 3</button></div>
   <div class="bar"><i id="barFill" style="width:0"></i></div>
@@ -355,10 +355,10 @@ function newDraft(type,week,date){
   });
   return {date,made:today(),week,type,items,wu,warm:WARM.map(()=>false),cool:COOL.map(()=>false)};
 }
+/* A en B wisselen elkaar af, op welke dag je ook gaat: na A komt B, na B komt A */
+const nextType=()=>{const last=S.history[S.history.length-1];return last&&last.type==='A'?'B':'A'};
 function autoType(){
-  const d=new Date().getDay();
-  if(d===2)return 'A';if(d===4)return 'B';
-  const last=S.history[S.history.length-1];return last&&last.type==='A'?'B':'A';
+  return nextType();
 }
 function ensureDraft(){if(!S.draft||!S.draft.week||!S.draft.wu||(S.draft.made||S.draft.date)!==today())S.draft=newDraft(autoType())}
 /* vorige keer = de laatste training vóór de datum van de training die je nu invult */
@@ -507,7 +507,7 @@ function nextUp(){
   const d=new Date(today()+'T12:00:00');
   for(let i=1;i<=7;i++){d.setDate(d.getDate()+1);const w=d.getDay(),ds=ymd(d);
     if(w===1||w===3)return {what:'Zwemmen',when:nlDate(ds),i};
-    if(w===2||w===4)return {what:'Gym · training '+(w===2?'A':'B'),when:nlDate(ds),i}}
+    if(w===2||w===4)return {what:'Gym · training '+nextType(),when:nlDate(ds),i}}
 }
 function renderDone(D){
   const {t,d}=counts(),vol=volume(D),r=progress(D),st=streakInfo(),seed=D.date+D.type;
